@@ -1,0 +1,6 @@
+{??? Undefined function or variable 'ocr'.
+} 
+diary('log'); diary on; ocr;
+{??? Undefined function or variable 'ocr'.
+} 
+exit;
