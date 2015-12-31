@@ -7,15 +7,14 @@ int main(int argc, char** argv){
 		exit(0);
 	}
 
-	char* fname = argv[1];
-	char* modelFname;
+	Param* param = new Param();
+	param->trainFname = argv[1];
 	if( argc > 1+1 )
-		modelFname = argv[2];
+		param->modelFname = argv[2];
 	else
-		modelFname = "model";
+		param->modelFname = "model";
 	
-	ChainProblem* prob = new ChainProblem();
-	prob->readData(fname);
-	
+	param->prob = new ChainProblem(param->trainFname);
+
 	return 0;
 }

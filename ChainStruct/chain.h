@@ -5,7 +5,8 @@
 class Seq{
 	public:
 	vector<SparseVec*> features;
-	vector<Int> labels; 
+	vector<Int> labels;
+       	int T;
 };
 
 class ChainProblem{
@@ -15,6 +16,10 @@ class ChainProblem{
 	vector<string> label_name_list;
 	vector<Seq*> data;
 	Int D;
+	
+	ChainProblem(char* fname){
+		readData(fname);
+	}
 
 	void readData(char* fname){
 		
@@ -61,6 +66,8 @@ class ChainProblem{
 		fin.close();
 		
 		D += 1; //bias
+		for(int i=0;i<data.size();i++)
+			data[i]->T = data[i]->labels.size();
 
 		label_name_list.resize(label_index_map.size());
 		for(map<string,Int>::iterator it=label_index_map.begin();
@@ -69,6 +76,38 @@ class ChainProblem{
 			label_name_list[it->second] = it->first;
 
 		delete[] line;
+	}
+};
+
+
+class Model{
+	
+	public:
+	HashVec** w;
+	HashVec** v;
+	int D;
+	int K;
+	vector<string>* label_name_list;
+	map<string,int>* label_index_map;
+};
+
+class Param{
+
+	public:
+	char* trainFname;
+	char* modelFname;
+	Float C;
+	ChainProblem* prob;
+
+	int solver;
+	int max_iter;
+	Float eta; //Augmented-Lagrangian parameter
+
+	Param(){
+		solver = 0;
+		C = 1.0;
+		max_iter = 20;
+		eta = 1.0;
 	}
 };
 
