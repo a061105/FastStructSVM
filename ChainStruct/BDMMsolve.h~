@@ -231,8 +231,8 @@ class BDMMsolve{
 			}
 			p_inf /= (2*M*K);
 			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi() << endl;
-			//if( p_inf < 1e-4 )
-			//	break;
+			if( p_inf < 5e-3 )
+				break;
 			
 			//cerr << "i=" << iter << ", Acc=" << train_acc_Viterbi() << ", dual_obj=" << dual_obj() << endl;
 		}

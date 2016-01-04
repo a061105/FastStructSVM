@@ -25,7 +25,7 @@ int main(int argc, char** argv){
 	cerr << "K=" << param->prob->K << endl;
 	cerr << "N=" << param->prob->N << endl;
 	cerr << "nSeq=" << param->prob->data.size() << endl;
-	
+
 	BDMMsolve* solver = new BDMMsolve(param);
 	Model* model = solver->solve();
 	//writeModel(model, param);

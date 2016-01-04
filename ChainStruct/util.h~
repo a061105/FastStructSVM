@@ -185,17 +185,9 @@ Float norm_sq( Float* v, Int size ){
 	return sum;
 }
 
-Int argmax( Float* arr, Int size ){
+Int argmax( Float* arr, Int size, Int& k ){
 	
-	Int kmax;
-	Float max_val = -1e300;
-	for(Int k=0;k<size;k++){
-		if( arr[k] > max_val ){
-			max_val = arr[k];
-			kmax = k;
-		}
-	}
-	return kmax;
+	for
 }
 
 #endif
