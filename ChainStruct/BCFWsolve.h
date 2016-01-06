@@ -319,11 +319,23 @@ class BCFWsolve{
 			}
 			p_inf /= (2*M*K);
 			
+			Float nnz_alpha=0;
+			for(Int i=0;i<N;i++){
+				nnz_alpha += act_k_index[i].size();
+			}
+			nnz_alpha /= N;
 			
-			//double pos_rate = pos_count / (pos_count+neg_count+zero_count);
-			//double nz_rate = (pos_count+neg_count) / (pos_count+neg_count+zero_count);
-			//cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi();
-			//cerr << ", search time=" << search_time << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate ;
+			Float nnz_beta=0;
+			for(Int i=0;i<M;i++){
+				nnz_beta += act_kk_index[i].size();
+			}
+			nnz_beta /= M;
+			
+			double pos_rate = pos_count / (pos_count+neg_count+zero_count);
+			double nz_rate = (pos_count+neg_count) / (pos_count+neg_count+zero_count);
+			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi();
+			cerr << ", nnz_a=" << nnz_alpha << ", nnz_b=" << nnz_beta ;
+			cerr << ", search time=" << search_time << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate ;
 			search_time = 0.0;
 			cerr << endl;
 			//if( p_inf < 1e-4 )
@@ -730,19 +742,14 @@ class BCFWsolve{
 				if (find(act_bi_index.begin(), act_bi_index.end(), k1*K+k2) != act_bi_index.end()){
 					continue;
 				}
-				double msg_L=0.0, msg_R=0.0;
 				Float val = v[k1][k2];
 				val += beta_suml[i][k1];
 				val -= alpha[il][k1];
-				msg_L -= alpha[il][k1];
 				
 				val += beta_sumr[i][k2];
 				val -= alpha[ir][k2];
-				msg_R -= alpha[ir][k2];
 				val += mu[i*2][k1];
-				msg_L += mu[i*2][k1];
 				val += mu[i*2+1][k2];
-				msg_R += mu[i*2+1][k2];
 				if (val > max_val){
 					max_k1k2 = k1*K+k2;
 					max_val = val;
@@ -754,19 +761,25 @@ class BCFWsolve{
 		if (max_val > 0.0){
 			act_bi_index.push_back(max_k1k2);
 		}
-		/*if( msg_L > 5e-2 )
-			pos_count+=1.0;
-		else if( msg_L < -5e-2 )
-			neg_count+=1.0;
-		else
-			zero_count+=1.0;
+		
+		for(Int k=0;k<K;k++){
+			
+			double msg_L = beta_suml[i][k] - alpha[il][k] + mu[i*2][k];
+			if( msg_L > 1e-2 )
+				pos_count+=1.0;
+			else if( msg_L < -1e-2 )
+				neg_count+=1.0;
+			else
+				zero_count+=1.0;
 
-		if( msg_R > 5e-2 )
-			pos_count+=1.0;
-		else if( msg_R < -5e-2 )
-			neg_count+=1.0;
-		else
-			zero_count+=1.0;*/
+			double msg_R = beta_sumr[i][k] - alpha[ir][k] + mu[i*2+1][k];
+			if( msg_R > 1e-2 )
+				pos_count+=1.0;
+			else if( msg_R < -1e-2 )
+				neg_count+=1.0;
+			else
+				zero_count+=1.0;
+		}
 	}
 	
 	void marginalize( Float* table, Direction j, Float* marg ){

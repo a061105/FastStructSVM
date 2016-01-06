@@ -1,6 +1,12 @@
 #include "util.h"
 #include "chain.h"
 
+double pos_count = 0;
+double neg_count = 0;
+double zero_count = 0;
+double v_win_hit = 0;
+double v_lose_hit = 0;
+
 class BDMMsolve{
 	
 	public:
@@ -123,6 +129,11 @@ class BDMMsolve{
 		Float p_inf;
 		for(Int iter=0;iter<max_iter;iter++){
 			
+			v_win_hit=0.0;
+			v_lose_hit=0.0;
+			pos_count=0;
+			neg_count=0;
+			zero_count=0;
 			random_shuffle(uni_ind, uni_ind+N);
 			//update unigram dual variables
 			for(Int r=0;r<N;r++){
@@ -230,7 +241,31 @@ class BDMMsolve{
 				}
 			}
 			p_inf /= (2*M*K);
-			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi() << endl;
+			
+			double beta_nnz=0.0;
+			for(Int i=0;i<M;i++){
+				for(Int k=0;k<K;k++){
+					for(Int k2=0;k2<K;k2++){
+						if( fabs(beta[i][k*K+k2]) > 1e-6 )
+							beta_nnz+=1.0;
+					}
+				}
+			}
+			beta_nnz/=M;
+			
+			double alpha_nnz=0.0;
+			for(Int i=0;i<N;i++){
+				for(Int k=0;k<K;k++){
+					if( fabs(alpha[i][k]) > 0.0 )
+						alpha_nnz += 1.0;
+				}
+			}
+			alpha_nnz/=N;
+
+			double pos_rate = pos_count/(pos_count+neg_count+zero_count);
+			double nz_rate = (pos_count+neg_count)/(pos_count+neg_count+zero_count);
+			double v_win_rate = v_win_hit/(v_win_hit+v_lose_hit);
+			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi() << ", beta_nnz=" << beta_nnz << ", alpha_nnz=" << alpha_nnz << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate << ", v_win_rate=" << v_win_rate << endl;
 			//if( p_inf < 1e-4 )
 			//	break;
 			
@@ -338,6 +373,7 @@ class BDMMsolve{
 		delete[] Dk;
 	}
 	
+
 	void bi_subSolve(Int i, Int n, Int t, Float* beta_new){
 		
 		Int Ksq = K*K;
@@ -363,7 +399,21 @@ class BDMMsolve{
 			msg_from_left[k] += -alpha[ i1 ][k] + mu[2*i+F_LEFT][k];
 			msg_from_right[k] += -alpha[ i1+1 ][k] + mu[2*i+F_RIGHT][k];
 		}
-		
+		for(Int k=0;k<K;k++){
+			if( msg_from_left[k] > 0.0 )
+				pos_count+=1.0;
+			else if( msg_from_left[k] < 0.0 )
+				neg_count+=1.0;
+			else
+				zero_count+=1.0;
+
+			if( msg_from_right[k] > 0.0 )
+				pos_count+=1.0;
+			else if( msg_from_left[k] < 0.0 )
+				neg_count+=1.0;
+			else
+				zero_count+=1.0;
+		}
 		
 		//compute gradient
 		Float Qii = (1.0+eta*K);
@@ -415,6 +465,33 @@ class BDMMsolve{
 		//record alpha new values
 		for(Int k1k2=0;k1k2<Ksq;k1k2++)
 			beta_new[k1k2] = min( (Float)((k1k2!=yi_yj)?0.0:C), (b-grad[k1k2])/Qii );
+		
+		//// compute statistics
+		double grad_max = -1e300;
+		for(Int kk=0;kk<K*K;kk++){
+			if( beta_i[kk] == 0.0 ){
+				if( grad[kk] > grad_max )
+					grad_max = grad[kk];
+			}
+		}
+		double v_max = -1e300;
+		Int argmax_k1;
+		Int argmax_k2;
+		for(Int k=0;k<K;k++){
+			for(Int k2=0;k2<K;k2++){	
+				if( beta_i[k*K+k2] == 0.0 && v[k][k2] > v_max ){
+					v_max = v[k][k2];
+					argmax_k1 = k;
+					argmax_k2 = k2;
+				}
+			}
+		}
+		
+		if( v_max >  grad_max ){
+			v_win_hit+=1.0;
+		}else{
+			v_lose_hit+=1.0;
+		}
 		
 
 		delete[] msg_from_left;
