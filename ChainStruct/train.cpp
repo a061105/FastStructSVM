@@ -1,5 +1,6 @@
 #include "chain.h"
 #include "BDMMsolve.h"
+#include "BCFWsolve.h"
 
 /*void writeModel(Model* model, Param* param){
 	
@@ -25,8 +26,9 @@ int main(int argc, char** argv){
 	cerr << "K=" << param->prob->K << endl;
 	cerr << "N=" << param->prob->N << endl;
 	cerr << "nSeq=" << param->prob->data.size() << endl;
-	
-	BDMMsolve* solver = new BDMMsolve(param);
+
+	//BDMMsolve* solver = new BDMMsolve(param);	
+	BCFWsolve* solver = new BCFWsolve(param);
 	Model* model = solver->solve();
 	//writeModel(model, param);
 	
