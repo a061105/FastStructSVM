@@ -119,6 +119,10 @@ class BCFWsolve{
 	
 	Model* solve(){
 		
+		pos_count=0;
+		neg_count=0;
+		zero_count=0;
+
 		Int* uni_ind = new Int[N];
 		for(Int i=0;i<N;i++)
 			uni_ind[i] = i;
@@ -300,8 +304,12 @@ class BCFWsolve{
 				}
 			}
 			p_inf /= (2*M*K);
+			
+			
+			double pos_rate = pos_count / (pos_count+neg_count+zero_count);
+			double nz_rate = (pos_count+neg_count) / (pos_count+neg_count+zero_count);
 			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi();
-			cerr << ", search time=" << search_time;
+			cerr << ", search time=" << search_time << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate ;
 			search_time = 0.0;
 			cerr << endl;
 			//if( p_inf < 1e-4 )
@@ -708,21 +716,43 @@ class BCFWsolve{
 				if (find(act_bi_index.begin(), act_bi_index.end(), k1*K+k2) != act_bi_index.end()){
 					continue;
 				}
+				double msg_L=0.0, msg_R=0.0;
 				Float val = v[k1][k2];
 				for (int _k2 = 0; _k2 < K; _k2++){
 					val += beta[i][k1*K+_k2];
+					msg_L += beta[i][k1*K+_k2];
 				}
 				val -= alpha[il][k1];
+				msg_L -= alpha[il][k1];
 				for (int _k1 = 0; _k1 < K; _k1++){
 					val += beta[i][_k1*K+k2];
+					msg_R += beta[i][_k1*K+k2 ];
 				}
 				val -= alpha[ir][k2];
+				msg_R -= alpha[ir][k2];
 				val += mu[i*2][k1];
+				msg_L += mu[i*2][k1];
 				val += mu[i*2+1][k2];
+				msg_R += mu[i*2+1][k2];
 				if (val > max_val){
 					max_k1k2 = k1*K+k2;
 					max_val = val;
 				}
+				
+				if( msg_L > 5e-2 )
+					pos_count+=1.0;
+				else if( msg_L < -5e-2 )
+					neg_count+=1.0;
+				else
+					zero_count+=1.0;
+				
+				if( msg_R > 5e-2 )
+					pos_count+=1.0;
+				else if( msg_R < -5e-2 )
+					neg_count+=1.0;
+				else
+					zero_count+=1.0;
+				
 			}
 		}
 		if (max_val > 0.0){
