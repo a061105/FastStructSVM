@@ -38,6 +38,19 @@ class BCFWsolve{
 			for(Int kk=0;kk<K*K;kk++)
 				beta[i][kk] = 0.0;
 		}
+		beta_suml = new Float*[M];
+		for(Int i=0;i<M;i++){
+			beta_suml[i] = new Float[K];
+			for(Int k=0;k<K;k++)
+				beta_suml[i][k] = 0.0;
+		}
+		beta_sumr = new Float*[M];
+		for(Int i=0;i<M;i++){
+			beta_sumr[i] = new Float[K];
+			for(Int k=0;k<K;k++)
+				beta_sumr[i][k] = 0.0;
+		}
+		
 		//allocate primal variables
 		w = new Float*[D];
 		for(Int j=0;j<D;j++){
@@ -119,9 +132,6 @@ class BCFWsolve{
 	
 	Model* solve(){
 		
-		pos_count=0;
-		neg_count=0;
-		zero_count=0;
 
 		Int* uni_ind = new Int[N];
 		for(Int i=0;i<N;i++)
@@ -258,6 +268,10 @@ class BCFWsolve{
 				bool has_zero = false;
 				for(vector<Int>::iterator it = act_kk_index[i].begin(); it != act_kk_index[i].end(); it++){
 					Int k1k2 = *it;
+					Int k2 = k1k2 % K;
+					Int k1 = (k1k2-k2)/K;
+					beta_suml[i][k1] += beta_new[k1k2] - beta_i[k1k2];
+					beta_sumr[i][k2] += beta_new[k1k2] - beta_i[k1k2];
 					beta_i[k1k2] = beta_new[k1k2];
 					has_zero |= (fabs(beta_new[k1k2]) < 1e-12);
 				}
@@ -306,10 +320,10 @@ class BCFWsolve{
 			p_inf /= (2*M*K);
 			
 			
-			double pos_rate = pos_count / (pos_count+neg_count+zero_count);
-			double nz_rate = (pos_count+neg_count) / (pos_count+neg_count+zero_count);
-			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi();
-			cerr << ", search time=" << search_time << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate ;
+			//double pos_rate = pos_count / (pos_count+neg_count+zero_count);
+			//double nz_rate = (pos_count+neg_count) / (pos_count+neg_count+zero_count);
+			//cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi();
+			//cerr << ", search time=" << search_time << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate ;
 			search_time = 0.0;
 			cerr << endl;
 			//if( p_inf < 1e-4 )
@@ -718,16 +732,11 @@ class BCFWsolve{
 				}
 				double msg_L=0.0, msg_R=0.0;
 				Float val = v[k1][k2];
-				for (int _k2 = 0; _k2 < K; _k2++){
-					val += beta[i][k1*K+_k2];
-					msg_L += beta[i][k1*K+_k2];
-				}
+				val += beta_suml[i][k1];
 				val -= alpha[il][k1];
 				msg_L -= alpha[il][k1];
-				for (int _k1 = 0; _k1 < K; _k1++){
-					val += beta[i][_k1*K+k2];
-					msg_R += beta[i][_k1*K+k2 ];
-				}
+				
+				val += beta_sumr[i][k2];
 				val -= alpha[ir][k2];
 				msg_R -= alpha[ir][k2];
 				val += mu[i*2][k1];
@@ -739,25 +748,25 @@ class BCFWsolve{
 					max_val = val;
 				}
 				
-				if( msg_L > 5e-2 )
-					pos_count+=1.0;
-				else if( msg_L < -5e-2 )
-					neg_count+=1.0;
-				else
-					zero_count+=1.0;
-				
-				if( msg_R > 5e-2 )
-					pos_count+=1.0;
-				else if( msg_R < -5e-2 )
-					neg_count+=1.0;
-				else
-					zero_count+=1.0;
 				
 			}
 		}
 		if (max_val > 0.0){
 			act_bi_index.push_back(max_k1k2);
 		}
+		/*if( msg_L > 5e-2 )
+			pos_count+=1.0;
+		else if( msg_L < -5e-2 )
+			neg_count+=1.0;
+		else
+			zero_count+=1.0;
+
+		if( msg_R > 5e-2 )
+			pos_count+=1.0;
+		else if( msg_R < -5e-2 )
+			neg_count+=1.0;
+		else
+			zero_count+=1.0;*/
 	}
 	
 	void marginalize( Float* table, Direction j, Float* marg ){
@@ -853,7 +862,8 @@ class BCFWsolve{
 	Float* Q_diag;
 	Float** alpha; //N*K dual variables for unigram factor
 	Float** beta; //M*K^2 dual variables for bigram factor
-	
+	Float** beta_suml;	
+	Float** beta_sumr;	
 	Float** w; //D*K primal variables for unigram factor
 	Float** v; //K^2 primal variables for bigram factor
 	
