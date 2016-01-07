@@ -302,17 +302,22 @@ class BCFWsolve{
 					for(Int j=0;j<NUM_DIRECT;j++){
 						Float* mu_ij = mu[2*i2+j];
 						//Float* msg_ij = messages[2*i2+j];
-						marginalize(beta[i2], (Direction)j, marg_ij);
+						//marginalize(beta[i2], (Direction)j, marg_ij);
 						for(Int k=0;k<K;k++){
 							//mu_ijk = mu_ij[k];
-							p_inf_ijk = marg_ij[k] - alpha[i1+j][k];
+							//p_inf_ijk = marg_ij[k] - alpha[i1+j][k];
+							if (j == 0)
+								p_inf_ijk = beta_suml[i2][k] - alpha[i1][k];
+							else
+								p_inf_ijk = beta_sumr[i2][k] - alpha[i1+1][k];
+							p_inf += fabs(p_inf_ijk);
+							
 							//p_inf_ijk = msg_ij[k] - mu_ijk;
 							//update
 							mu_ij[k] += admm_step_size*(p_inf_ijk);
 							//maintain messages(mu) = (E*beta-alpha+\frac{1}{eta}mu)
 							//msg_ij[k] += mu_ij[k] - mu_ijk;
 							//compute infeasibility of consistency constraInt
-							p_inf += fabs(p_inf_ijk);
 						}
 					}
 				}
@@ -402,7 +407,7 @@ class BCFWsolve{
 				msg_from_right[k] += -alpha[i][k] + mu[2*i2+F_LEFT][k];
 			}
 		}
-
+		
 		for(vector<Int>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
 			Int k = *it;
 			if( k!=yi )
@@ -518,16 +523,18 @@ class BCFWsolve{
 
 		//variable values
 		Float* beta_i = beta[i];
+		Float* beta_suml_i = beta_suml[i];
+		Float* beta_sumr_i = beta_sumr[i];
 		//Float* msg_from_left = messages[2*bi_index(n,t)+F_LEFT];
 		//Float* msg_from_right = messages[2*bi_index(n,t)+F_RIGHT];
 		Float* msg_from_left = new Float[K];
 		Float* msg_from_right = new Float[K];
-		marginalize( beta_i, F_LEFT, msg_from_left );
-		marginalize( beta_i, F_RIGHT, msg_from_right );
+		memset(msg_from_left, 0.0, sizeof(Float)*K);
+		memset(msg_from_right, 0.0, sizeof(Float)*K);
 		Int i1 = uni_index(n,t);
 		for(Int k=0;k<K;k++){
-			msg_from_left[k] += -alpha[ i1 ][k] + mu[2*i+F_LEFT][k];
-			msg_from_right[k] += -alpha[ i1+1 ][k] + mu[2*i+F_RIGHT][k];
+			msg_from_left[k]  = beta_suml_i[k]-alpha[ i1   ][k]   + mu[2*i+F_LEFT ][k];
+			msg_from_right[k] = beta_sumr_i[k]-alpha[ i1+1 ][k] + mu[2*i+F_RIGHT][k];
 		}
 		
 		
@@ -754,8 +761,6 @@ class BCFWsolve{
 					max_k1k2 = k1*K+k2;
 					max_val = val;
 				}
-				
-				
 			}
 		}
 		if (max_val > 0.0){
