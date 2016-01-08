@@ -127,13 +127,15 @@ class Param{
 	int solver;
 	int max_iter;
 	Float eta; //Augmented-Lagrangian parameter
-
+	bool using_brute_force;
+	
 	Param(){
 		solver = 0;
 		C = 1.0;
 		max_iter =100000;
 		eta = 0.1;
 		heldout_prob = NULL;
+		using_brute_force = false;
 	}
 };
 
