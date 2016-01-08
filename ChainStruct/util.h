@@ -252,6 +252,8 @@ inline pair<Float, Int> pop(ArrayHeap heap, Int* rev_index, Int& size_heap){
 }
 */
 
+long long line_bottom = 0, line_top = 0;
+long long mat_bottom = 0, mat_top = 0;
 
 // Given msg_L[k1] > 0, this function checks part of row k1, i.e. the set {(k1, k2) | msg_R[k2] <= 0} (Taking row case as example, can also work for columns)
 // heap is either col_heap or row_heap with size K
@@ -261,7 +263,9 @@ inline pair<Float, Int> pop(ArrayHeap heap, Int* rev_index, Int& size_heap){
 inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max_val, Int& max_k1k2, Int size_heap, bool* inside, Int* dir){
 	vector<Int> q;
 	q.push_back(0);
+	line_bottom++;
 	while (!q.empty()){
+		line_top++;
 		Int index = q.back();
 		q.pop_back();
 		pair<Float, Int> p = heap[index];
@@ -301,7 +305,9 @@ inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max
 inline void search_matrix(ArrayHeap heap, Float* msg_L, Float* msg_R, Float& max_val, Int& max_k1k2, Int size_heap, bool* inside, Int K){
 	vector<Int> q;
 	q.push_back(0);
+	mat_bottom++;
 	while (!q.empty()){
+		mat_top++;
 		Int index = q.back();
 		q.pop_back();
 		pair<Float, Int> p = heap[index];

@@ -4,13 +4,13 @@ all:
 	g++ $(FLAG) -o train train.cpp
 
 s=1
-FLAG=
+opt=
 pos:
 	$(eval train_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.subtrain)
 	$(eval model := model)
-	./train -s $(s) $(FLAG) $(train_file) $(model) 
+	./train -s $(s) $(opt) $(train_file) $(model) 
 
 speech:
 	$(eval train_file := /scratch/cluster/ianyen/data/speech/speech.subtrain)
 	$(eval model := model)
-	./train -s $(s) $(FLAG) $(train_file) $(model)
+	./train -s $(s) $(opt) $(train_file) $(model)
