@@ -42,8 +42,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 //				  break;
 //			case 'c': param->C = atof(argv[i]);
 //				  break;
-//			case 'm': param->max_iter = atoi(argv[i]);
-//				  break;
+			case 'm': param->max_iter = atoi(argv[i]);
+				  break;
 //			case 'g': param->max_select = atoi(argv[i]);
 //				  break;
 //			case 'r': param->speed_up_rate = atoi(argv[i]);

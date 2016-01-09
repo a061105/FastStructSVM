@@ -4,6 +4,7 @@
 
 extern long long line_bottom, line_top;
 extern long long mat_bottom, mat_top;
+long long submat_bottom, submat_top;
 
 class BCFWsolve{
 	
@@ -27,6 +28,7 @@ class BCFWsolve{
 		
 		//bi_search
 		inside = new bool[K*K];
+		memset(inside, 0, sizeof(bool)*K*K);
 		col_heap = new ArrayHeap[K];
 		row_heap = new ArrayHeap[K];
 		for (int k = 0; k < K; k++){
@@ -63,6 +65,8 @@ class BCFWsolve{
 			for(Int kk=0;kk<K*K;kk++)
 				beta[i][kk] = 0.0;
 		}
+		
+		//maintain message
 		beta_suml = new Float*[M];
 		for(Int i=0;i<M;i++){
 			beta_suml[i] = new Float[K];
@@ -74,6 +78,15 @@ class BCFWsolve{
 			beta_sumr[i] = new Float[K];
 			for(Int k=0;k<K;k++)
 				beta_sumr[i][k] = 0.0;
+		}
+		msg_left  = new Float*[M];
+		msg_right = new Float*[M];
+		pos_left.clear(); pos_right.clear();
+		for (Int i = 0; i < M; i++){
+			msg_left[i]  = new Float[K];
+			msg_right[i] = new Float[K];
+			memset(msg_left[i] , 0.0, sizeof(Float)*K);
+			memset(msg_right[i], 0.0, sizeof(Float)*K);
 		}
 		
 		//allocate primal variables
@@ -130,8 +143,11 @@ class BCFWsolve{
 
 		//uni_search
 		max_indices = new Int[K];
-		prod = new Float[K];
+		w_nz_index = new vector<Int>[D];
 		
+		//global buffer
+		prod = new Float[K];
+		grad = new Float[K*K];
 	}
 	
 	~BCFWsolve(){
@@ -159,12 +175,26 @@ class BCFWsolve{
 		}
 		delete[] mu;
 		//delete[] messages;
+	
+		//maintain message	
+		for (Int i=0; i<M; i++){
+			delete[] msg_left[i];
+			delete[] msg_right[i];
+		}
+		pos_left.clear(); pos_right.clear();
+		delete[] msg_left;
+		delete[] msg_right;
 		
+
 		//some constants
 		delete Q_diag;
 
 		//uni_search
 		delete[] max_indices;
+		delete[] w_nz_index;
+		
+		//global buffer
+		delete[] grad;
 		delete[] prod;
 
 		//bi_search
@@ -184,7 +214,11 @@ class BCFWsolve{
 		delete[] col_dir;
 		delete[] row_dir;
 	}
-	
+
+	////////////////
+	//debug
+	Float real_max_val = 0.0;
+		
 	Model* solve(){
 		
 
@@ -221,15 +255,30 @@ class BCFWsolve{
 			
 			double bi_search_time = 0.0, bi_subSolve_time = 0.0, bi_maintain_time = 0.0;
 			double uni_search_time = 0.0, uni_subSolve_time = 0.0, uni_maintain_time = 0.0;
+			double calcAcc_time = 0.0;
+			area1_time = 0.0; area23_time = 0.0; area4_time = 0.0;
 			line_top = 0; line_bottom = 0;
 			mat_top = 0;  mat_bottom = 0;
-			random_shuffle(uni_ind, uni_ind+N);
+			submat_top = 0; submat_bottom = 0;
+			//random_shuffle(uni_ind, uni_ind+N);
 			//update unigram dual variables
 			for(Int r=0;r<N;r++){
 
 				Int i = uni_ind[r];
 				Int n, t;
 				get_uni_rev_index(i, n, t);
+				Float* alpha_i = alpha[i];
+				Seq* seq = data->at(n);
+				Int il = -1;
+				if (t != 0){
+					il = bi_index(n, t-1);
+				}
+				Int ir = -1;
+				if (t != seq->T - 1){
+					ir = bi_index(n,t);
+				}
+				SparseVec* xi = seq->features[t];
+				Int yi = seq->labels[t];
 			
 				//brute force search
 				uni_search_time -= omp_get_wtime();
@@ -238,22 +287,24 @@ class BCFWsolve{
 				
 				//subproblem solving
 				uni_subSolve_time -= omp_get_wtime();
-				uni_subSolve(i, n, t, act_k_index[i], alpha_new);
+				uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new);
 				uni_subSolve_time += omp_get_wtime();
-
 				//maIntain relationship between w and alpha
 				uni_maintain_time -= omp_get_wtime();
-				Float* alpha_i = alpha[i];
-				Seq* seq = data->at(n);
-				SparseVec* xi = seq->features[t];
-				Int yi = seq->labels[t];
 				for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++){
 					Int j = it->first;
 					Float fval = it->second;
 					Float* wj = w[j];
+					//vector<Int>::iterator nnz_it = w_nz_index[j].begin();
 					for(vector<Int>::iterator it2 = act_k_index[i].begin(); it2 != act_k_index[i].end(); it2++){
 						Int k = *it2;
 						wj[k] += fval * (alpha_new[k]-alpha_i[k]);
+						/*if (wj[k] == 0.0) continue;
+						while (nnz_it != w_nz_index[j].end() && *nnz_it < k)
+							nnz_it++;
+						if (nnz_it != w_nz_index[j].end() && *nnz_it > k){
+							w_nz_index[j].insert(nnz_it, k);
+						}*/
 					}
 				}
 				//maintain messages(alpha) = (E*beta-alpha+\frac{1}{eta}mu)
@@ -271,9 +322,23 @@ class BCFWsolve{
 
 				bool has_zero = 0;
 				//update alpha
+				Float* msg_right_il = NULL;
+				Float* msg_left_ir  = NULL;
+				if (il != -1) msg_right_il = msg_right[il];
+				if (ir != -1) msg_left_ir  = msg_left[ir];
 				for(vector<Int>::iterator it = act_k_index[i].begin(); it != act_k_index[i].end(); it++ ){
 					Int k = *it;
-					alpha_i[k] = alpha_new[k];	
+					//cout << i << " " << il << " " << ir << " " << k << endl;
+					if (il != -1){
+					//	cout << beta_sumr[il][k] << " " << alpha_new[k] << " " << mu[il*2+1][k] << " " << msg_right_il[k] << endl;	
+						msg_right_il[k] -= alpha_new[k] - alpha_i[k];
+						assert(fabs(msg_right_il[k] - mu[il*2+1][k] - beta_sumr[il][k] + alpha_new[k]) < 1e-7);
+					}
+					if (ir != -1){
+						msg_left_ir[k]  -= alpha_new[k] - alpha_i[k];
+						assert(fabs(msg_left_ir[k]  - mu[ir*2][k]   - beta_suml[ir][k] + alpha_new[k]) < 1e-7);
+					}
+					alpha_i[k] = alpha_new[k];
 					has_zero |= (fabs(alpha_new[k])<1e-12);
 				}
 					
@@ -293,7 +358,7 @@ class BCFWsolve{
 			}
 			
 			//update bigram dual variables
-			random_shuffle(bi_ind, bi_ind+M);
+			//random_shuffle(bi_ind, bi_ind+M);
 			for(Int r=0;r<M;r++){
 				Int i = bi_ind[r];
 				Int n, t;
@@ -302,7 +367,9 @@ class BCFWsolve{
 				Int yi_l = seq->labels[t];
 				Int yi_r = seq->labels[t+1];
 				Int ylyr = yi_l*K + yi_r;
-				
+				Int il = uni_index(n, t);
+				Int ir = uni_index(n, t + 1);
+					
 				//search using oracle
 				bi_search_time -= omp_get_wtime();
 				if (using_brute_force)
@@ -348,25 +415,33 @@ class BCFWsolve{
 					}
 				}
 				//maintain messages(beta) = (E*beta-alpha+\frac{1}{eta}mu)
-				/*Float* msg_to_left = messages[2*bi_index(n,t)+F_LEFT];
-				Float* msg_to_right = messages[2*bi_index(n,t)+F_RIGHT];
-				for(Int k=0; k<K; k++){
-					Int Kk = K*k;
-					for(Int k2=0; k2<K; k2++){
-						msg_to_left[k] += beta_new[Kk+k2] - beta_i[Kk+k2];
-						msg_to_right[k2] += beta_new[Kk+k2] - beta_i[Kk+k2];
-					}
-				}
-				*/
 
 				//update beta and shrink active set if necessary
 				bool has_zero = false;
+				Float old_val = 0.0;
 				for(vector<Int>::iterator it = act_kk_index[i].begin(); it != act_kk_index[i].end(); it++){
 					Int k1k2 = *it;
 					Int k2 = k1k2 % K;
 					Int k1 = (k1k2-k2)/K;
-					beta_suml[i][k1] += beta_new[k1k2] - beta_i[k1k2];
-					beta_sumr[i][k2] += beta_new[k1k2] - beta_i[k1k2];
+					Float delta_beta = beta_new[k1k2] - beta_i[k1k2];
+					beta_suml[i][k1] += delta_beta;
+					beta_sumr[i][k2] += delta_beta;
+					
+					//old_val = msg_right[i][k2]; 
+					msg_right[i][k2] += delta_beta;
+					//msg_right[i][k2] = mu[i*2+1][k2]+beta_sumr[i][k2]-alpha[ir][k2];
+					//cout << i << " " << il << " " << ir << " " << k1 << " " << k2 << endl;
+					//cout << beta_sumr[i][k2] << " " << alpha_new[k] << " " << mu[il*2+1][k] << " " << msg_right_il[k] << endl;	
+					//assert(fabs(msg_right[i][k2]  - mu[i*2+1][k2] - beta_sumr[i][k2] + alpha[ir][k2]) < 1e-3);
+					
+					//old_val = msg_left[i][k1];
+					msg_left[i][k1] += delta_beta;
+					//msg_left[i][k1] = mu[i*2][k1] + beta_suml[i][k1] - alpha[il][k1];
+					//cout << i << " " << il << " " << ir << " " << k1 << endl;
+					//cout << beta_suml[i][k1] << " " << alpha[il][k1] << " " << mu[i*2][k1] << " " << msg_left[i][k1] << endl;	
+					
+					//assert(fabs(msg_left[i][k1]  - mu[i*2][k1] - beta_suml[i][k1] + alpha[il][k1]) < 1e-3);
+						
 					beta_i[k1k2] = beta_new[k1k2];
 					has_zero |= (fabs(beta_new[k1k2]) < 1e-12);
 				}
@@ -396,22 +471,36 @@ class BCFWsolve{
 				for(Int t=0;t<seq->T-1;t++){
 					Int i2 = bi_index(n,t);
 					Int i1 = uni_index(n,t);
+					Float* msg_left_i2 = msg_left[i2];
+					Float* msg_right_i2 = msg_right[i2];
+					Float* beta_suml_i2 = beta_suml[i2];
+					Float* beta_sumr_i2 = beta_sumr[i2];
 					for(Int j=0;j<NUM_DIRECT;j++){
 						Float* mu_ij = mu[2*i2+j];
+						Float* alpha_i1j = alpha[i1+j];
 						//Float* msg_ij = messages[2*i2+j];
-						//marginalize(beta[i2], (Direction)j, marg_ij);
 						for(Int k=0;k<K;k++){
 							//mu_ijk = mu_ij[k];
 							//p_inf_ijk = marg_ij[k] - alpha[i1+j][k];
-							if (j == 0)
-								p_inf_ijk = beta_suml[i2][k] - alpha[i1][k];
-							else
-								p_inf_ijk = beta_sumr[i2][k] - alpha[i1+1][k];
+							if (j == 0){
+								p_inf_ijk = beta_suml_i2[k] - alpha_i1j[k];
+								msg_left_i2[k] += admm_step_size*(p_inf_ijk);
+								//update
+								mu_ij[k] += admm_step_size*(p_inf_ijk);
+								//cout << i2 << " " << i1 << " " << (i1+1) << " " << k << endl;
+								//cout << beta_suml_i2[k] << " " << alpha_i1j[k] << " " << mu_ij[k] << " " << msg_left_i2[k] << endl;	
+								//assert(fabs(msg_left_i2[k]  - mu_ij[k] - beta_suml_i2[k] + alpha_i1j[k]) < 1e-3);
+							}else{
+								p_inf_ijk = beta_sumr_i2[k] - alpha_i1j[k];
+								msg_right_i2[k] += admm_step_size*(p_inf_ijk);
+								//update
+								mu_ij[k] += admm_step_size*(p_inf_ijk);
+								//assert(fabs(msg_right_i2[k] - mu_ij[k] - beta_sumr_i2[k] + alpha_i1j[k]) < 1e-3);
+							}
 							p_inf += fabs(p_inf_ijk);
 							
 							//p_inf_ijk = msg_ij[k] - mu_ijk;
-							//update
-							mu_ij[k] += admm_step_size*(p_inf_ijk);
+								
 							//maintain messages(mu) = (E*beta-alpha+\frac{1}{eta}mu)
 							//msg_ij[k] += mu_ij[k] - mu_ijk;
 							//compute infeasibility of consistency constraInt
@@ -434,14 +523,14 @@ class BCFWsolve{
 			}
 			nnz_beta /= M;
 			
-			double pos_rate = pos_count / (pos_count+neg_count+zero_count);
-			double nz_rate = (pos_count+neg_count) / (pos_count+neg_count+zero_count);
+			calcAcc_time -= omp_get_wtime();
 			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi();
+			calcAcc_time += omp_get_wtime();
 			cerr << ", nnz_a=" << nnz_alpha << ", nnz_b=" << nnz_beta ;
 			cerr << ", uni_search=" << uni_search_time << ", uni_subSolve=" << uni_subSolve_time << ", uni_maintain=" << uni_maintain_time;
 			cerr << ", bi_search="  << bi_search_time  << ", bi_subSolve="  << bi_subSolve_time  << ", bi_maintain="  << bi_maintain_time;
-			cerr << ", p_rate=" << pos_rate << ", nz_rate=" << nz_rate ;
-			cerr << ", avg area23=" << (double)line_top/line_bottom << ", avg area4=" << (double)mat_top/mat_bottom;
+			cerr << ", calcAcc=" << calcAcc_time;
+			cerr << ", area1=" << (double)submat_top/submat_bottom << ", area23=" << (double)line_top/line_bottom << ", area4=" << (double)mat_top/mat_bottom;
 			cerr << endl;
 			//if( p_inf < 1e-4 )
 			//	break;
@@ -470,8 +559,8 @@ class BCFWsolve{
 
 	private:
 	
-	void uni_subSolve(Int i, Int n, Int t, vector<Int>& act_uni_index, Float* alpha_new ){ //solve i-th unigram factor
-		memset(prod, 0.0, sizeof(Float)*K);	
+	void uni_subSolve(Int i, Int n, Int t, Int il, Int ir, vector<Int>& act_uni_index, Float* alpha_new ){ //solve i-th unigram factor
+		memset(prod, 0.0, sizeof(Float)*K);
 		Float* Dk = new Float[act_uni_index.size()];
 		
 		//data
@@ -481,31 +570,11 @@ class BCFWsolve{
 		//variable values
 		Float Qii = Q_diag[i];
 		Float* alpha_i = alpha[i];
-		Float* msg_from_left=NULL;
-		Float* msg_from_right=NULL;
 		/*if( t!=0 )//not beginning
 			msg_from_left = messages[2*bi_index(n,t-1)+F_RIGHT];
 		if( t!=seq->T-1 ) //not end
 			msg_from_right = messages[2*bi_index(n,t)+F_LEFT];
 		*/
-		if( t != 0 ){
-			Int i2 = bi_index(n,t-1);
-			msg_from_left = new Float[K];
-			Float* beta_suml_i2 = beta_suml[i2];
-			for(vector<Int>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
-				Int k = *it;
-				msg_from_left[k] = beta_suml_i2[k] -alpha[i][k] + mu[2*i2+F_RIGHT][k];
-			}
-		}
-		if( t!=seq->T-1 ){
-			Int i2 = bi_index(n,t);
-			msg_from_right = new Float[K];
-			Float* beta_sumr_i2 = beta_sumr[i2];
-			for(vector<Int>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
-				Int k = *it;
-				msg_from_right[k] = beta_sumr_i2[k] -alpha[i][k] + mu[2*i2+F_LEFT][k];
-			}
-		}
 		
 		for(vector<Int>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
 			Int k = *it;
@@ -525,18 +594,20 @@ class BCFWsolve{
 		}
 		
 		//message=(E\beta-\alpha+\mu/\eta)
-		if( msg_from_left != NULL)
+		if( t != 0 ){
+			Float* msg_to_left = msg_right[il];
 			for(vector<Int>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
 				Int k = *it;
-				prod[k] -= eta*msg_from_left[k];
+				prod[k] -= eta*msg_to_left[k];
 			}
-		
-		if( msg_from_right != NULL )
+		}
+		if( t != seq->T-1 ){
+			Float* msg_to_right = msg_left[ir];
 			for(vector<Int>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
 				Int k = *it;
-				prod[k] -= eta*msg_from_right[k];
+				prod[k] -= eta*msg_to_right[k];
 			}
-		
+		}
 		//compute Dk
 		for(Int ind = 0; ind < act_uni_index.size(); ind++){
 			Int k = act_uni_index[ind];
@@ -586,7 +657,8 @@ class BCFWsolve{
 			Float xij = it->second;
 			Int j = it->first;
 			Float* wj = w[j];
-			for (int k = 0; k < K; k++){
+			for (vector<Int>::iterator nnz_it = w_nz_index[j].begin(); nnz_it != w_nz_index[j].end(); nnz_it++){
+				Int k = *nnz_it;
 				prod[k] += wj[k] * xij;
 				if (prod[k] > prod[max_indices[0]]){
 					max_indices[0] = k;
@@ -602,8 +674,19 @@ class BCFWsolve{
 				}
 			}
 		}
+		//cout << "max_index=" << max_indices[0];
 		if (prod[max_indices[0]] > th){
-			act_k_index.push_back(max_indices[0]);
+			//act_k_index.push_back(max_indices[0]);
+			if (act_k_index.back() < max_indices[0]){
+				act_k_index.push_back(max_indices[0]);
+			}else { 
+				vector<Int>::iterator it = act_k_index.begin();
+				while (max_indices[0] > *it){
+					it++;
+				}
+				// put max_indices[0] before it
+				act_k_index.insert(it, max_indices[0]);
+			}
 		}
 	}
 	
@@ -611,7 +694,6 @@ class BCFWsolve{
 	void bi_subSolve(Int i, Int n, Int t, vector<Int>& act_bi_index, Float* beta_new){
 		
 		Int Ksq = K*K;
-		Float* grad = new Float[Ksq];
 		Float* Dk = new Float[act_bi_index.size()];
 		
 		//data
@@ -622,61 +704,37 @@ class BCFWsolve{
 
 		//variable values
 		Float* beta_i = beta[i];
-		Float* beta_suml_i = beta_suml[i];
-		Float* beta_sumr_i = beta_sumr[i];
 		//Float* msg_from_left = messages[2*bi_index(n,t)+F_LEFT];
 		//Float* msg_from_right = messages[2*bi_index(n,t)+F_RIGHT];
-		Float* msg_from_left = new Float[K];
-		Float* msg_from_right = new Float[K];
-		memset(msg_from_left, 0.0, sizeof(Float)*K);
-		memset(msg_from_right, 0.0, sizeof(Float)*K);
-		Int i1 = uni_index(n,t);
-		for(Int k=0;k<K;k++){
-			msg_from_left[k]  = beta_suml_i[k]-alpha[ i1   ][k]   + mu[2*i+F_LEFT ][k];
-			msg_from_right[k] = beta_sumr_i[k]-alpha[ i1+1 ][k] + mu[2*i+F_RIGHT][k];
-		}
-		
+		Float* msg_from_left = msg_left[i];
+		Float* msg_from_right = msg_right[i];
 		
 		//compute gradient
 		Float Qii = (1.0+eta*K);
+	
 		for(vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
-			//if( k1k2 != yi_yj )
-			//	grad[k1k2] = 1.0 - Qii*beta_i[k1k2];
-			//else
 			Int k1k2 = *it;
 			grad[k1k2] = -Qii*beta_i[k1k2];
 		}
-		
+	
 		for(vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
 			Int k1k2 = *it;
 			Int k2 = k1k2 % K;
-			Int k1 = (k1k2 - k2)/K;
+			Int k1 = k1k2 / K;	
 			grad[k1k2] += v[k1][k2];
-		}
-		//grad: message from left
-		for(vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
-			Int k1k2 = *it;
-			Int k2 = k1k2 % K;
-			Int k1 = (k1k2 - k2)/K;
-			Float tmp = eta*msg_from_left[k1];
-			grad[k1k2] += tmp;
-		}
-		//grad: message from right
-		for(vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
-			Int k1k2 = *it;
-			Int k2 = k1k2 % K;
+			//grad: message from left
+			grad[k1k2] += eta*msg_from_left[k1];
+			//grad: message from right
 			grad[k1k2] += eta*msg_from_right[k2];
 		}
-		
-		//compute Dk
-		for(Int it = 0; it < act_bi_index.size(); it++){
-			Int k1k2 = act_bi_index[it];
+		for (int itt = 0; itt < act_bi_index.size(); itt++){
+			Int k1k2 = act_bi_index[itt];
+			//compute Dk
 			if( k1k2 != yi_yj )
-				Dk[it] = grad[k1k2];
+				Dk[itt] = grad[k1k2];
 			else
-				Dk[it] = grad[k1k2] + Qii*C;
+				Dk[itt] = grad[k1k2] + Qii*C;	
 		}
-		
 		//sort according to D_k
 		sort( Dk, Dk+act_bi_index.size(), greater<Float>() );
 		
@@ -693,14 +751,11 @@ class BCFWsolve{
 			beta_new[k1k2] = min( (Float)((k1k2!=yi_yj)?0.0:C), (b-grad[k1k2])/Qii );
 		}
 
-		delete[] msg_from_left;
-		delete[] msg_from_right;
-		delete[] grad;
 		delete[] Dk;
 	}
 	
 	void bi_search(Int i, Int n, Int t, vector<Int>& act_bi_index){
-		
+
 		memset(inside, 0, sizeof(bool)*K*K);
 		for (vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
 			inside[*it] = true;
@@ -710,38 +765,49 @@ class BCFWsolve{
 		Int ir = uni_index(n, t+1);
 		Int max_k1k2 = -1;
 		Float max_val = -1e300;
+		
 		//compute messages and then sort in decreasing order
-		Float* msg_to_left = new Float[K];
-		Float* msg_to_right = new Float[K];
-		memset(msg_to_left, 0.0, sizeof(Float)*K);
-		memset(msg_to_right, 0.0, sizeof(Float)*K);
+		/*Float* msg_from_left = new Float[K];
+		Float* msg_from_right = new Float[K];
+		memset(msg_from_left, 0.0, sizeof(Float)*K);
+		memset(msg_from_right, 0.0, sizeof(Float)*K);
+		
 		Float* beta_suml_i = beta_suml[i];
 		Float* beta_sumr_i = beta_sumr[i];
 		Float* alpha_il = alpha[il];
 		Float* alpha_ir = alpha[ir];
 		Float* mu_il = mu[i*2];
-		Float* mu_ir = mu[i*2+1];
-		vector<Int> pos_left;
-		vector<Int> pos_right;
+		Float* mu_ir = mu[i*2+1];*/
+
+		//vector<Int> pos_left;	
+		//vector<Int> pos_right;	
+		Float* msg_from_left  = msg_left[i];
+		Float* msg_from_right = msg_right[i];
+		pos_left.clear(); pos_right.clear();
 		for (int k = 0; k < K; k++){
-			msg_to_left[k] = beta_suml_i[k] - alpha_il[k] + mu_il[k];
-			msg_to_right[k] = beta_sumr_i[k] - alpha_ir[k] + mu_ir[k];
-			if (msg_to_left[k] > 0.0)
+			//msg_from_left[k] = beta_suml_i[k] - alpha_il[k] + mu_il[k];
+			//msg_from_right[k] = beta_sumr_i[k] - alpha_ir[k] + mu_ir[k];
+			//assert(fabs(beta_suml_i[k] - alpha_il[k] + mu_il[k] - msg_from_left[k])<1e-3 );
+			//assert(fabs(beta_sumr_i[k] - alpha_ir[k] + mu_ir[k] - msg_from_right[k])<1e-3 );
+			if (msg_from_left[k] > 0.0)
 				pos_left.push_back(k);
-			if (msg_to_right[k] > 0.0)
+			if (msg_from_right[k] > 0.0)
 				pos_right.push_back(k);
 		}
 		//sort(left_index, left_index+K, ScoreComp(msg_to_left));
 		//sort(right_index, right_index+K, ScoreComp(msg_to_right));
 		
 		//check area 1: msg_to_left > 0 and msg_to_right > 0
+			
+		submat_bottom += 1;
+		submat_top += pos_left.size()*pos_right.size();	
 		for (vector<Int>::iterator it_l = pos_left.begin(); it_l != pos_left.end(); it_l++){
 			int kl = *it_l;
 			Float* v_kl = v[kl];
-			Float msg_L_kl = msg_to_left[kl];
+			Float msg_L_kl = msg_from_left[kl];
 			for (vector<Int>::iterator it_r = pos_right.begin(); it_r != pos_right.end(); it_r++){
 				int kr = *it_r;
-				Float val = v_kl[kr] + msg_L_kl + msg_to_right[kr];
+				Float val = v_kl[kr] + msg_L_kl + msg_from_right[kr];
 				if (val > max_val && !inside[kl*K+kr]){
 					max_val = val;
 					max_k1k2 = kl*K+kr;
@@ -752,39 +818,24 @@ class BCFWsolve{
 		//check area 2: msg_to_left > 0 and msg_to_right = 0
 		for (vector<Int>::iterator it_l = pos_left.begin(); it_l != pos_left.end(); it_l++){
 			Int k1 = *it_l;
-			search_line(row_heap[k1], msg_to_left[k1], msg_to_right, max_val, max_k1k2, row_heap_size[k1], inside, col_dir);
+			search_line(row_heap[k1], msg_from_left[k1], msg_from_right, max_val, max_k1k2, row_heap_size[k1], inside, col_dir);
 		}
 		
 		//check area 3: msg_to_left = 0 and msg_to_right > 0
 		for (vector<Int>::iterator it_r = pos_right.begin(); it_r != pos_right.end(); it_r++){
 			Int k2 = *it_r;
-			search_line(col_heap[k2], msg_to_right[k2], msg_to_left, max_val, max_k1k2, col_heap_size[k2], inside, row_dir);
+			search_line(col_heap[k2], msg_from_right[k2], msg_from_left, max_val, max_k1k2, col_heap_size[k2], inside, row_dir);
 		}
-	
+		
 		//check area 4: msg_to_left <= 0 and msg_to_right <= 0
-		search_matrix(v_heap, msg_to_left, msg_to_right, max_val, max_k1k2, v_heap_size, inside, K);
+		search_matrix(v_heap, msg_from_left, msg_from_right, max_val, max_k1k2, v_heap_size, inside, K);
 		
+		/*for (vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+			inside[*it] = false;
+		}*/
 		if (max_val > 0.0){
+			//assert(fabs(real_max_val - max_val) < 1e-5);
 			act_bi_index.push_back(max_k1k2);
-		}
-		
-		for(Int k=0;k<K;k++){
-			
-			double msg_L = beta_suml[i][k] - alpha[il][k] + mu[i*2][k];
-			if( msg_L > 1e-2 )
-				pos_count+=1.0;
-			else if( msg_L < -1e-2 )
-				neg_count+=1.0;
-			else
-				zero_count+=1.0;
-
-			double msg_R = beta_sumr[i][k] - alpha[ir][k] + mu[i*2+1][k];
-			if( msg_R > 1e-2 )
-				pos_count+=1.0;
-			else if( msg_R < -1e-2 )
-				neg_count+=1.0;
-			else
-				zero_count+=1.0;
 		}
 	}
 	
@@ -813,27 +864,10 @@ class BCFWsolve{
 				}
 			}
 		}
-		if (max_val > 0.0){
-			act_bi_index.push_back(max_k1k2);
-		}
-		
-		for(Int k=0;k<K;k++){
-			
-			double msg_L = beta_suml[i][k] - alpha[il][k] + mu[i*2][k];
-			if( msg_L > 1e-2 )
-				pos_count+=1.0;
-			else if( msg_L < -1e-2 )
-				neg_count+=1.0;
-			else
-				zero_count+=1.0;
 
-			double msg_R = beta_sumr[i][k] - alpha[ir][k] + mu[i*2+1][k];
-			if( msg_R > 1e-2 )
-				pos_count+=1.0;
-			else if( msg_R < -1e-2 )
-				neg_count+=1.0;
-			else
-				zero_count+=1.0;
+		if (max_val > 0.0){
+			//real_max_val = max_val;
+			act_bi_index.push_back(max_k1k2);
 		}
 	}
 	void compute_offset(){
@@ -973,30 +1007,6 @@ class BCFWsolve{
 		
 		return acc;
 	}
-	
-	
-	void marginalize( Float* table, Direction j, Float* marg ){
-		
-		for(Int k=0;k<K;k++)
-			marg[k] = 0.0;
-		
-		if( j == F_LEFT ){
-			for(Int k1=0;k1<K;k1++){
-				Int Kk1 = K*k1;
-				for(Int k2=0;k2<K;k2++)
-					marg[k1] += table[Kk1+k2];
-			}
-		}else if( j == F_RIGHT ){
-			for(Int k1=0;k1<K;k1++){
-				Int Kk1 = K*k1;
-				for(Int k2=0;k2<K;k2++)
-					marg[k2] += table[Kk1+k2];
-			}
-		}else{
-			cerr << "unknown direction: " << j << endl;
-			exit(0);
-		}
-	}
 
 	Float dual_obj(){
 		
@@ -1028,7 +1038,6 @@ class BCFWsolve{
 		bi_obj/=2.0;
 			
 		Float p_inf_ijk;
-		Float* marg_ij = new Float[K];
 		Float p_inf = 0.0;
 		for(Int n=0;n<nSeq;n++){
 			Seq* seq = data->at(n);
@@ -1036,19 +1045,19 @@ class BCFWsolve{
 				Int i2 = bi_index(n,t);
 				Int i1 = uni_index(n,t);
 				for(Int j=0;j<NUM_DIRECT;j++){
-					//Float* msg_ij = messages[2*i2+j];
-					//Float* mu_ij = mu[2*i2+j];
-					marginalize(beta[i2], (Direction)j, marg_ij);
+					Float* mu_ij = mu[2*i2+j];
 					for(Int k=0;k<K;k++){
-						p_inf_ijk = marg_ij[k] - alpha[i1+j][k];
-						//p_inf_ijk = msg_ij[k] - mu_ij[k];
+						if (j == 0)
+							p_inf_ijk = beta_suml[i2][k] - alpha[i1][k];
+						else
+							p_inf_ijk = beta_sumr[i2][k] - alpha[i1+1][k];
 						p_inf += p_inf_ijk * p_inf_ijk;
+
 					}
 				}
 			}
 		}
 		p_inf *= eta/2.0;
-		delete[] marg_ij;
 
 		return uni_obj + bi_obj + p_inf;
 	}
@@ -1086,6 +1095,16 @@ class BCFWsolve{
 	//uni_search
 	Int* max_indices;
 	Float* prod;
+	Float* grad;
+	vector<Int>* w_nz_index;
+
+	// oriented from beta nodes to its connected alpha nodes
+	// msg_left[i2][k] = beta_suml[i2][k] - alpha[i2_left][k] + mu[i2+0][k]
+	// msg_right[i2][k] = beta_sumr[i2][k] - alpha[i2_right][k] + mu[i2+1][k]
+	Float** msg_left;
+	Float** msg_right;	
+	vector<Int> pos_left;
+	vector<Int> pos_right;
 
 	//bi_search
 	ArrayHeap* row_heap;
@@ -1101,4 +1120,5 @@ class BCFWsolve{
 	Int* row_dir;
 	bool* inside;
 	bool using_brute_force;
+	double area1_time, area23_time, area4_time;
 };

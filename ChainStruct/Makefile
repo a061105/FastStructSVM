@@ -5,12 +5,13 @@ all:
 
 s=1
 opt=
+scale=train
 pos:
-	$(eval train_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.subtrain)
+	$(eval train_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.$(scale))
 	$(eval model := model)
 	./train -s $(s) $(opt) $(train_file) $(model) 
 
 speech:
-	$(eval train_file := /scratch/cluster/ianyen/data/speech/speech.subtrain)
+	$(eval train_file := /scratch/cluster/ianyen/data/speech/speech.$(scale))
 	$(eval model := model)
 	./train -s $(s) $(opt) $(train_file) $(model)

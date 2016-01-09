@@ -16,7 +16,7 @@
 #include <tuple>
 using namespace std;
 
-typedef float Float;
+typedef double Float;
 typedef int Int;
 typedef vector<pair<Int,Float> > SparseVec;
 typedef unordered_map<Int,Float> HashVec;
