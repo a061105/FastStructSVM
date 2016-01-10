@@ -15,6 +15,7 @@ class BCFWsolve{
 		
 		//Parse info from ChainProblem
 		using_brute_force = param->using_brute_force;
+		split_up_rate = param->split_up_rate;
 		prob = param->prob;
 		data = &(prob->data);
 		nSeq = data->size();
@@ -610,6 +611,12 @@ class BCFWsolve{
 	}
 
 	void uni_search(Int i, Int n, Int t, vector<pair<Int, Float>>& act_k_index){
+		Int rand_interval = rand() % split_up_rate;
+		Int interval_length = K/split_up_rate;
+		Int range_l = rand_interval*interval_length, range_r = range_l+interval_length;
+		if (range_r > K)
+			range_r = K;
+
 		Seq* seq = data->at(n);
 		Int yi = seq->labels[t];
 		memset(prod, 0.0, sizeof(Float)*K);
@@ -619,12 +626,12 @@ class BCFWsolve{
 		}
 		prod[yi] = -INFI;
 		Float th = -1.0;
-		max_indices[0] = 0;
+		max_indices[0] = range_l;
 		for (SparseVec::iterator it = xi->begin(); it != xi->end(); it++){
 			Float xij = it->second;
 			Int j = it->first;
 			Float* wj = w[j];
-			for (int k = 0; k < K; k++){
+			for (int k = range_l; k < range_r; k++){
 				prod[k] += wj[k] * xij;
 				if (prod[k] > prod[max_indices[0]]){
 					max_indices[0] = k;
@@ -1140,6 +1147,7 @@ class BCFWsolve{
 	//uni_search
 	Int* max_indices;
 	vector<Int>* w_nz_index;
+	Int split_up_rate = 1;
 
 	// oriented from beta nodes to its connected alpha nodes
 	// msg_left[i2][k] = beta_suml[i2][k] - alpha[i2_left][k] + mu[i2+0][k]

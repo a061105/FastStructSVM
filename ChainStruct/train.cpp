@@ -50,8 +50,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 //				  break;
 //			case 'i': param->using_importance_sampling = true; --i;
 //				  break;
-//			case 'q': param->split_up_rate = atoi(argv[i]);
-//				  break;
+			case 'q': param->split_up_rate = atoi(argv[i]);
+				  break;
 //			case 'p': param->post_solve_iter = atoi(argv[i]);
 //				  break;
 //			case 'h': param->heldoutFname = argv[i];

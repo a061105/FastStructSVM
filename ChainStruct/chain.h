@@ -128,7 +128,7 @@ class Param{
 	int max_iter;
 	Float eta; //Augmented-Lagrangian parameter
 	bool using_brute_force;
-	
+	int split_up_rate;
 	Param(){
 		solver = 0;
 		C = 10.0;
@@ -136,6 +136,7 @@ class Param{
 		eta = 0.1;
 		heldout_prob = NULL;
 		using_brute_force = false;
+		split_up_rate = 1;
 	}
 };
 
