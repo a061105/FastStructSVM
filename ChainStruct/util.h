@@ -13,10 +13,10 @@
 #include <omp.h>
 #include <unordered_map>
 #include <time.h>
-#include <tuple>
+#include <queue>
 using namespace std;
 
-typedef double Float;
+typedef float Float;
 typedef int Int;
 typedef vector<pair<Int,Float> > SparseVec;
 typedef unordered_map<Int,Float> HashVec;
@@ -197,6 +197,42 @@ Int argmax( Float* arr, Int size ){
 	return kmax;
 }
 
+//shift up, maintain reverse index
+inline void siftUp(Float* heap, Int index){
+	Float cur = heap[index];
+	while (index > 0){
+		Int parent = (index-1) >> 1;
+		if (cur > heap[parent]){
+			heap[index] = heap[parent];
+			index = parent;
+		} else {
+			break;
+		}
+	}
+	heap[index] = cur;
+}
+
+//shift down, maintain reverse index
+inline void siftDown(Float* heap, Int index, Int size_heap){
+	Float cur = heap[index];
+	Int lchild = index * 2 +1;
+	Int rchild = lchild+1;
+	while (lchild < size_heap){
+		Int next_index = index;
+		if (heap[lchild] > heap[index]){
+			next_index = lchild;
+		}
+		if (rchild < size_heap && heap[rchild] > heap[next_index]){
+			next_index = rchild;
+		}
+		if (index == next_index) 
+			break;
+		heap[index] = heap[next_index];
+		heap[next_index] = cur;
+		index = next_index;
+		lchild = index * 2 +1; rchild = lchild+1;
+	}
+}
 
 //shift up, maintain reverse index
 inline void siftUp(ArrayHeap heap, Int index, Int* rev_index){

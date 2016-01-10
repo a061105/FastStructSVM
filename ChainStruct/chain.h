@@ -131,7 +131,7 @@ class Param{
 	
 	Param(){
 		solver = 0;
-		C = 1.0;
+		C = 10.0;
 		max_iter =100000;
 		eta = 0.1;
 		heldout_prob = NULL;

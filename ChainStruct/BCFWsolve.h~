@@ -838,7 +838,7 @@ class BCFWsolve{
 		}
 	}
 	
-	void bi_brute_force_search(Int i, Int n, Int t, vector<pair<Int, Float>>& act_bi_index){
+	void bi_brute_force_search(Int i, Int n, Int t, vector<Int>& act_bi_index){
 		Int max_k1k2 = -1;
 		Float max_val = -1e300;
 
