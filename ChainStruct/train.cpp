@@ -2,10 +2,7 @@
 #include "BDMMsolve.h"
 #include "BCFWsolve.h"
 
-/*void writeModel(Model* model, Param* param){
-	
 
-}*/
 void exit_with_help(){
 	cerr << "Usage: ./train (options) [train_data] (model)" << endl;
 	cerr << "options:" << endl;
@@ -58,6 +55,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 //				  break;
 			case 'b': param->using_brute_force = true; --i;
 				  break;
+			case 'w': param->write_model_period = atoi(argv[i]);
+				  break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;
 				  exit(0);
@@ -69,7 +68,9 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 
 	param->trainFname = argv[i];
 	i++;
-
+	if (param->write_model_period == 0){
+		param->write_model_period = param->max_iter;
+	}
 	if( i<argc )
 		param->modelFname = argv[i];
 	else{
@@ -101,11 +102,12 @@ int main(int argc, char** argv){
 	if (param->solver == 0){
 		BDMMsolve* solver = new BDMMsolve(param);
 		Model* model = solver->solve();
+		cerr << "Acc=" << model->calcAcc_Viterbi(param->prob) << endl;
 	} else {
 		BCFWsolve* solver = new BCFWsolve(param);
 		Model* model = solver->solve();
+		cerr << "Acc=" << model->calcAcc_Viterbi(param->prob) << endl;
 	}
-	//writeModel(model, param);
 	
 	return 0;
 }

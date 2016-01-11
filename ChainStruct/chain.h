@@ -98,6 +98,70 @@ Int ChainProblem::K;
 class Model{
 	
 	public:
+	Model(char* fname){
+		ifstream fin(fname);
+		char* line = new char[LINE_LEN];
+		//first line, get K
+		fin.getline(line, LINE_LEN);
+		string line_str(line);
+		vector<string> tokens = split(line_str, "=");
+		K = stoi(tokens[1]);
+		
+		//second line, get label_name_list
+		fin.getline(line, LINE_LEN);
+		line_str = string(line);
+		tokens = split(line_str, " ");
+		label_name_list = new vector<string>();
+		label_index_map = new map<string, Int>();
+		//token[0] is 'label', means nothing
+		for (Int i = 1; i < tokens.size(); i++){
+			label_name_list->push_back(tokens[i]);
+			label_index_map->insert(make_pair(tokens[i], (i-1)));
+		}
+		
+		//third line, get D
+		fin.getline(line, LINE_LEN);
+		line_str = string(line);
+		tokens = split(line_str, "=");
+		D = stoi(tokens[1]);
+		
+		//skip fourth line
+		fin.getline(line, LINE_LEN);
+
+		//next D lines: read w
+		w = new Float*[D];
+		for (Int j = 0; j < D; j++){
+			w[j] = new Float[K];
+			fin.getline(line, LINE_LEN);
+			line_str = string(line);
+			tokens = split(line_str, " ");
+			Float* wj = w[j];
+			for (vector<string>::iterator it = tokens.begin(); it != tokens.end(); it++){
+				vector<string> k_w = split(*it, ":");
+				Int k = stoi(k_w[0]);
+				wj[k] = stof(k_w[1]);
+			}
+		}
+
+		//skip next line
+		fin.getline(line, LINE_LEN);
+
+		//next K lines: read v
+		v = new Float*[K];
+		for (Int k1 = 0; k1 < K; k1++){
+			v[k1] = new Float[K];
+			fin.getline(line, LINE_LEN);
+			line_str = string(line);
+			tokens = split(line_str, " ");
+			Float* v_k1 = v[k1];
+			for (vector<string>::iterator it = tokens.begin(); it != tokens.end(); it++){
+				vector<string> k2_v = split(*it, ":");
+				Int k2 = stoi(k2_v[0]);
+				v_k1[k2] = stof(k2_v[1]);
+			}
+		}
+	}
+
 	Model(Float** _w, Float** _v, ChainProblem* prob){
 		D = prob->D;
 		K = prob->K;
@@ -113,6 +177,123 @@ class Model{
 	Int K;
 	vector<string>* label_name_list;
 	map<string,Int>* label_index_map;
+
+	void writeModel( char* fname ){
+
+		ofstream fout(fname);
+		fout << "nr_class K=" << K << endl;
+		fout << "label ";
+		for(vector<string>::iterator it=label_name_list->begin();
+				it!=label_name_list->end(); it++)
+			fout << *it << " ";
+		fout << endl;
+		fout << "nr_feature D=" << D << endl;
+		fout << "unigram w, format: D lines; line j contains (k, w) forall w[j][k] neq 0" << endl;
+		for (int j = 0; j < D; j++){
+			Float* wj = w[j];
+			bool flag = false;
+			for (int k = 0; k < K; k++){
+				if (fabs(wj[k]) < 1e-12)
+					continue;
+				if (flag)
+					fout << " ";
+				else
+					flag = true;
+				fout << k << ":" << wj[k];
+			}
+			fout << endl;
+		}
+
+		fout << "bigram v, format: K lines; line k1 contains (k2, v) forall v[k1][k2] neq 0" << endl;
+		for (int k1 = 0; k1 < K; k1++){
+			Float* v_k1 = v[k1];
+			bool flag = false;
+			for (int k2 = 0; k2 < K; k2++){
+				if (fabs(v_k1[k2]) < 1e-12)
+					continue;
+				if (flag)
+					fout << " ";
+				else 
+					flag = true;
+				fout << k2 << ":" << v_k1[k2];
+			}
+			fout << endl;
+		}
+		fout.close();
+	}
+
+	Float calcAcc_Viterbi(ChainProblem* prob){
+		vector<Seq*>* data = &(prob->data);
+		Int nSeq = data->size();
+		Int N = 0;
+		Int hit=0;
+		for(Int n=0;n<nSeq;n++){
+			
+			Seq* seq = data->at(n);
+			N += seq->T;
+			//compute prediction
+			Int* pred = new Int[seq->T];
+			Float** max_sum = new Float*[seq->T];
+			Int** argmax_sum = new Int*[seq->T];
+			for(Int t=0; t<seq->T; t++){
+				max_sum[t] = new Float[K];
+				argmax_sum[t] = new Int[K];
+				for(Int k=0;k<K;k++)
+					max_sum[t][k] = -1e300;
+			}
+			////Viterbi t=0
+			SparseVec* xi = seq->features[0];
+			for(Int k=0;k<K;k++)
+				max_sum[0][k] = 0.0;
+			for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++){
+				Float* wj = w[it->first];
+				for(Int k=0;k<K;k++)
+					max_sum[0][k] += wj[k]*it->second;
+			}
+			////Viterbi t=1...T-1
+			for(Int t=1; t<seq->T; t++){
+				//passing message from t-1 to t
+				for(Int k1=0;k1<K;k1++){
+					Float tmp = max_sum[t-1][k1];
+					Float cand_val;
+					for(Int k2=0;k2<K;k2++){
+						 cand_val = tmp + v[k1][k2];
+						 if( cand_val > max_sum[t][k2] ){
+							max_sum[t][k2] = cand_val;
+							argmax_sum[t][k2] = k1;
+						 }
+					}
+				}
+				//adding unigram factor
+				SparseVec* xi = seq->features[t];
+				for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++)
+					for(Int k2=0;k2<K;k2++)
+						max_sum[t][k2] += w[it->first][k2] * it->second;
+			}
+			////Viterbi traceback
+			pred[seq->T-1] = argmax( max_sum[seq->T-1], K );
+			for(Int t=seq->T-1; t>=1; t--){
+				pred[t-1] = argmax_sum[t][ pred[t] ];
+			}
+			
+			//compute accuracy
+			for(Int t=0;t<seq->T;t++){
+				if( this->label_name_list->at(pred[t]) == prob->label_name_list[seq->labels[t]] )
+					hit++;
+			}
+			
+			for(Int t=0; t<seq->T; t++){
+				delete[] max_sum[t];
+				delete[] argmax_sum[t];
+			}
+			delete[] max_sum;
+			delete[] argmax_sum;
+			delete[] pred;
+		}
+		Float acc = (Float)hit/N;
+		
+		return acc;
+	}
 };
 
 class Param{
@@ -129,6 +310,7 @@ class Param{
 	Float eta; //Augmented-Lagrangian parameter
 	bool using_brute_force;
 	int split_up_rate;
+	int write_model_period;
 	Param(){
 		solver = 0;
 		C = 10.0;
@@ -137,6 +319,7 @@ class Param{
 		heldout_prob = NULL;
 		using_brute_force = false;
 		split_up_rate = 1;
+		write_model_period = 0;
 	}
 };
 

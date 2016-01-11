@@ -21,10 +21,11 @@ class BCFWsolve{
 		nSeq = data->size();
 		D = prob->D;
 		K = prob->K;
-		
+		modelFname = param->modelFname;	
 		C = param->C;
 		eta = param->eta;
 		max_iter = param->max_iter;
+		write_model_period = param->write_model_period;
 		admm_step_size = 1.0;
 		
 		//bi_search
@@ -269,17 +270,17 @@ class BCFWsolve{
 				Int yi = seq->labels[t];
 			
 				//brute force search
-				uni_search_time -= clock();
+				uni_search_time -= get_current_time();
 				uni_search(i, n, t, act_k_index[i]);
-				uni_search_time += clock();
+				uni_search_time += get_current_time();
 				
 
 				//subproblem solving
-				uni_subSolve_time -= clock();
+				uni_subSolve_time -= get_current_time();
 				uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new);
-				uni_subSolve_time += clock();
+				uni_subSolve_time += get_current_time();
 				//maIntain relationship between w and alpha
-				uni_maintain_time -= clock();
+				uni_maintain_time -= get_current_time();
 				for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++){
 					Int j = it->first;
 					Float fval = it->second;
@@ -323,7 +324,7 @@ class BCFWsolve{
 					}
 					act_k_index[i] = tmp_vec;
 				}
-				uni_maintain_time += clock();
+				uni_maintain_time += get_current_time();
 			}
 			
 			//update bigram dual variables
@@ -340,21 +341,21 @@ class BCFWsolve{
 				Int ir = uni_index(n, t + 1);
 					
 				//search using oracle
-				bi_search_time -= clock();
+				bi_search_time -= get_current_time();
 				if (using_brute_force)
 					bi_brute_force_search(i, n, t, act_kk_index[i]);
 				else
 					bi_search(i, n, t, act_kk_index[i]);
-				bi_search_time += clock();
+				bi_search_time += get_current_time();
 				
 				//subproblem solving
-				bi_subSolve_time -= clock();
+				bi_subSolve_time -= get_current_time();
 				bi_subSolve(i, n, t, act_kk_index[i], beta_new);
-				bi_subSolve_time += clock();
+				bi_subSolve_time += get_current_time();
 
 				//maIntain relationship between v and beta
 				//maintain messages(beta) = (E*beta-alpha+\frac{1}{eta}mu)
-				bi_maintain_time -= clock();
+				bi_maintain_time -= get_current_time();
 				Float* msg_left_i = msg_left[i];
 				Float* msg_right_i = msg_right[i];
 				Int num_zero = 0;
@@ -414,12 +415,12 @@ class BCFWsolve{
 						act_kk_index[i].erase(to_be_trimed);
 					}
 				} 
-				bi_maintain_time += clock();
+				bi_maintain_time += get_current_time();
 			}
 			
 			
 			//ADMM update (enforcing consistency)
-			admm_maintain_time -= clock();
+			admm_maintain_time -= get_current_time();
 			p_inf = 0.0;
 			Float* cache = new Float[K];
 			for(Int n=0;n<nSeq;n++){
@@ -450,7 +451,7 @@ class BCFWsolve{
 					}
 				}
 			}
-			admm_maintain_time += clock();
+			admm_maintain_time += get_current_time();
 			p_inf /= (2*M*K);
 			
 			Float nnz_alpha=0;
@@ -467,24 +468,29 @@ class BCFWsolve{
 			
 			cerr << "i=" << iter;
 			/*if(iter%5==0){
-				calcAcc_time -= clock();
+				calcAcc_time -= get_current_time();
 				cerr << ", Acc=" << train_acc_Viterbi();
-				calcAcc_time += clock();
-				cerr << ", calcAcc=" << calcAcc_time/CLOCKS_PER_SEC ;
+				calcAcc_time += get_current_time();
+				cerr << ", calcAcc=" << calcAcc_time ;
 			}*/
 			cerr << ", nnz_a=" << nnz_alpha << ", nnz_b=" << nnz_beta ;
-			cerr << ", uni_search=" << uni_search_time/CLOCKS_PER_SEC << ", uni_subSolve=" << uni_subSolve_time/CLOCKS_PER_SEC << ", uni_maintain=" << uni_maintain_time/CLOCKS_PER_SEC ;
-			cerr << ", bi_search="  << bi_search_time/CLOCKS_PER_SEC   << ", bi_subSolve="  << bi_subSolve_time/CLOCKS_PER_SEC   << ", bi_maintain="  << bi_maintain_time/CLOCKS_PER_SEC ;
-			cerr << ", admm_maintain=" << admm_maintain_time/CLOCKS_PER_SEC ;
+			cerr << ", uni_search=" << uni_search_time << ", uni_subSolve=" << uni_subSolve_time << ", uni_maintain=" << uni_maintain_time ;
+			cerr << ", bi_search="  << bi_search_time   << ", bi_subSolve="  << bi_subSolve_time << ", bi_maintain="  << bi_maintain_time ;
+			cerr << ", admm_maintain=" << admm_maintain_time ;
 			cerr << ", area1=" << (double)submat_top/submat_bottom << ", area23=" << (double)line_top/line_bottom << ", area4=" << (double)mat_top/mat_bottom;
 			cerr << endl;
+			if ((iter + 1) % write_model_period == 0){
+				Model* model = new Model(w, v, prob);
+				char* name = new char[FNAME_LEN];
+				sprintf(name, "%s.%d", modelFname, (iter+1));
+				cout << name << endl;
+				model->writeModel(name);
+			}
 			//if( p_inf < 1e-4 )
 			//	break;
 			
 			//cerr << "i=" << iter << ", Acc=" << train_acc_Viterbi() << ", dual_obj=" << dual_obj() << endl;
 		}
-	
-		cerr << "Acc=" << train_acc_Viterbi() << endl;
 
 		delete[] uni_ind;
 		delete[] bi_ind;
@@ -506,6 +512,11 @@ class BCFWsolve{
 
 	private:
 	
+	inline double get_current_time(){
+		return (double)clock()/CLOCKS_PER_SEC;
+		//return omp_get_wtime();
+	}
+
 	void uni_subSolve(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new ){ //solve i-th unigram factor
 		//memset(prod, 0.0, sizeof(Float)*K);
 		//data
@@ -976,76 +987,6 @@ class BCFWsolve{
 		return acc;
 	}
 	
-	Float train_acc_Viterbi(){
-		
-		Int hit=0;
-		for(Int n=0;n<nSeq;n++){
-			
-			Seq* seq = data->at(n);
-			//compute prediction
-			Int* pred = new Int[seq->T];
-			Float** max_sum = new Float*[seq->T];
-			Int** argmax_sum = new Int*[seq->T];
-			for(Int t=0; t<seq->T; t++){
-				max_sum[t] = new Float[K];
-				argmax_sum[t] = new Int[K];
-				for(Int k=0;k<K;k++)
-					max_sum[t][k] = -1e300;
-			}
-			////Viterbi t=0
-			SparseVec* xi = seq->features[0];
-			for(Int k=0;k<K;k++)
-				max_sum[0][k] = 0.0;
-			for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++){
-				Float* wj = w[it->first];
-				for(Int k=0;k<K;k++)
-					max_sum[0][k] += wj[k]*it->second;
-			}
-			////Viterbi t=1...T-1
-			for(Int t=1; t<seq->T; t++){
-				//passing message from t-1 to t
-				for(Int k1=0;k1<K;k1++){
-					Float tmp = max_sum[t-1][k1];
-					Float cand_val;
-					for(Int k2=0;k2<K;k2++){
-						 cand_val = tmp + v[k1][k2];
-						 if( cand_val > max_sum[t][k2] ){
-							max_sum[t][k2] = cand_val;
-							argmax_sum[t][k2] = k1;
-						 }
-					}
-				}
-				//adding unigram factor
-				SparseVec* xi = seq->features[t];
-				for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++)
-					for(Int k2=0;k2<K;k2++)
-						max_sum[t][k2] += w[it->first][k2] * it->second;
-			}
-			////Viterbi traceback
-			pred[seq->T-1] = argmax( max_sum[seq->T-1], K );
-			for(Int t=seq->T-1; t>=1; t--){
-				pred[t-1] = argmax_sum[t][ pred[t] ];
-			}
-			
-			//compute accuracy
-			for(Int t=0;t<seq->T;t++){
-				if( pred[t] == seq->labels[t] )
-					hit++;
-			}
-			
-			for(Int t=0; t<seq->T; t++){
-				delete[] max_sum[t];
-				delete[] argmax_sum[t];
-			}
-			delete[] max_sum;
-			delete[] argmax_sum;
-			delete[] pred;
-		}
-		Float acc = (Float)hit/N;
-		
-		return acc;
-	}
-
 	Float dual_obj(vector<pair<Int, Float>>*& act_k_index, vector<pair<Int, Float>>*& act_kk_index){
 		
 		Float uni_obj = 0.0;
@@ -1141,6 +1082,8 @@ class BCFWsolve{
 	Float* h_right;
 
 	Int max_iter;
+	Int write_model_period;
+	char* modelFname;
 	Float eta;
 	Float admm_step_size;
 
