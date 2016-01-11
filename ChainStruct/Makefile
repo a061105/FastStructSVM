@@ -4,22 +4,34 @@ all:
 	g++ $(FLAG) -o train train.cpp
 
 s=1
-m=50
+m=1000
 q=1
+e=5
 opt=
 scale=train
 
 pos:
 	$(eval train_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.$(scale))
+	#$(eval heldout_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.tmp)
 	$(eval model := model)
-	./train -s $(s) -q $(q) -m $(m) $(opt) $(train_file) $(model) 
+	#./train -s $(s) -q $(q) -m $(m) $(opt) -e $(e) -h $(heldout_file) $(train_file) $(model) 
+	./train -s $(s) -q $(q) -m $(m) $(opt) -e $(e) $(train_file) $(model) 
 
 speech:
 	$(eval train_file := /scratch/cluster/ianyen/data/speech/speech.$(scale))
+	$(eval heldout_file := /scratch/cluster/ianyen/data/speech/speech.tmp)
 	$(eval model := model)
-	./train -s $(s) -q $(q) -m $(m) $(opt) $(train_file) $(model)
+	#./train -s $(s) -q $(q) -m $(m) $(opt) -e $(e) $(train_file) $(model) 
+	./train -s $(s) -q $(q) -m $(m) $(opt) -e $(e) -h $(heldout_file) $(train_file) $(model) 
 
 OCR:
-	$(eval train_file := /scratch/cluster/ianyen/data/ChineseOCR/data.fea.$(scale))
+	$(eval train_file := /scratch/cluster/ianyen/data/ChineseOCR/data.bin20.$(scale))
+	$(eval heldout_file := /scratch/cluster/ianyen/data/ChineseOCR/data.bin20.test)
 	$(eval model := model)
-	./train -s $(s) -q $(q) -m $(m) $(opt) $(train_file) $(model)
+	./train -s $(s) -q $(q) -m $(m) $(opt) -e $(e) -h $(heldout_file) $(train_file) $(model) 
+
+ocr.fea:
+	$(eval train_file := /scratch/cluster/ianyen/data/ChineseOCR/data.fea.$(scale))
+	$(eval heldout_file := /scratch/cluster/ianyen/data/ChineseOCR/data.fea.test)
+	$(eval model := model)
+	./train -s $(s) -q $(q) -m $(m) $(opt) -e $(e) -h $(heldout_file) $(train_file) $(model) 

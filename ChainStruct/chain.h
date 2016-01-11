@@ -1,7 +1,7 @@
 #ifndef CHAIN_H
 #define CHAIN_H
 #include "util.h"
-
+#include <cassert>
 class Seq{
 	public:
 	vector<SparseVec*> features;
@@ -16,6 +16,8 @@ class ChainProblem{
 	static vector<string> label_name_list;
 	static Int D;
 	static Int K;
+	static Int* remap_indices;
+	static Int* rev_remap_indices;
 	vector<Seq*> data;
 	Int N;
 
@@ -24,7 +26,6 @@ class ChainProblem{
 	}
 	
 	void readData(char* fname){
-		
 		ifstream fin(fname);
 		char* line = new char[LINE_LEN];
 		
@@ -79,14 +80,69 @@ class ChainProblem{
 			data[i]->T = data[i]->labels.size();
 
 		label_name_list.resize(label_index_map.size());
-		for(map<string,Int>::iterator it=label_index_map.begin();
-				it!=label_index_map.end();
-				it++)
+		
+		for(map<string,Int>::iterator it=label_index_map.begin(); it!=label_index_map.end(); it++){
 			label_name_list[it->second] = it->first;
+		}
 		
 		K = label_index_map.size();
-
+		
 		delete[] line;
+	}
+	void label_random_remap(){
+		srand(time(NULL));
+		if (remap_indices == NULL || rev_remap_indices == NULL){
+			remap_indices = new Int[K];
+			for (Int k = 0; k < K; k++)
+				remap_indices[k] = k;
+			random_shuffle(remap_indices, remap_indices+K);
+			rev_remap_indices = new Int[K];
+			for (Int k = 0; k < K; k++)
+				rev_remap_indices[remap_indices[k]] = k;
+			label_index_map.clear();
+			for (Int ind = 0; ind < K; ind++){
+				label_index_map.insert(make_pair(label_name_list[ind], remap_indices[ind]));
+			}
+			label_name_list.clear();
+			label_name_list.resize(label_index_map.size());
+			for(map<string,Int>::iterator it=label_index_map.begin(); it!=label_index_map.end(); it++){
+				label_name_list[it->second] = it->first;
+			}
+		}
+		for (int i = 0; i < data.size(); i++){
+			Seq* seq = data[i];
+			for (int t = 0; t < seq->T; t++){
+				Int yi = seq->labels[t];
+				seq->labels[t] = remap_indices[yi];
+			}
+		}
+	}
+
+	void print_freq(){
+		Int* freq = new Int[K];
+		memset(freq, 0, sizeof(Int)*K);
+		for (int i = 0; i < data.size(); i++){
+			Seq* seq = data[i];
+			for (int t = 0; t < seq->T; t++){
+				Int yi = seq->labels[t];
+				freq[yi]++;
+			}
+		}
+		sort(freq, freq + K, greater<Int>());
+		for (int k = 0; k < K; k++)
+			cout << freq[k] << " ";
+		cout << endl;
+	}
+
+	void simple_shuffle(){
+		
+		for (int i = 0; i < data.size(); i++){
+			Seq* seq = data[i];
+			for (int t = 0; t < seq->T; t++){
+				Int yi = seq->labels[t];
+				seq->labels[t] = (yi+13)%K;
+			}
+		}
 	}
 };
 
@@ -94,6 +150,8 @@ map<string,Int> ChainProblem::label_index_map;
 vector<string> ChainProblem::label_name_list;
 Int ChainProblem::D = -1;
 Int ChainProblem::K;
+Int* ChainProblem::remap_indices=NULL;
+Int* ChainProblem::rev_remap_indices=NULL;
 
 class Model{
 	
@@ -278,7 +336,9 @@ class Model{
 			
 			//compute accuracy
 			for(Int t=0;t<seq->T;t++){
-				if( this->label_name_list->at(pred[t]) == prob->label_name_list[seq->labels[t]] )
+				assert(label_name_list == &(prob->label_name_list));
+				//if( label_name_list->at(pred[t]) == prob->label_name_list[seq->labels[t]] )
+				if( pred[t] == seq->labels[t] )
 					hit++;
 			}
 			
@@ -300,17 +360,19 @@ class Param{
 
 	public:
 	char* trainFname;
+	char* heldoutFname;
 	char* modelFname;
 	Float C;
 	ChainProblem* prob;
 	ChainProblem* heldout_prob;
-
+	
 	int solver;
 	int max_iter;
 	Float eta; //Augmented-Lagrangian parameter
 	bool using_brute_force;
 	int split_up_rate;
 	int write_model_period;
+	int early_terminate;
 	Param(){
 		solver = 0;
 		C = 10.0;
@@ -320,6 +382,7 @@ class Param{
 		using_brute_force = false;
 		split_up_rate = 1;
 		write_model_period = 0;
+		early_terminate = 3;
 	}
 };
 

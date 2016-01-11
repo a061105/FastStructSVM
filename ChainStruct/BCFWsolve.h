@@ -5,6 +5,7 @@
 extern long long line_bottom, line_top;
 extern long long mat_bottom, mat_top;
 long long submat_bottom, submat_top;
+extern double overall_time;
 
 class BCFWsolve{
 	
@@ -17,6 +18,7 @@ class BCFWsolve{
 		using_brute_force = param->using_brute_force;
 		split_up_rate = param->split_up_rate;
 		prob = param->prob;
+		heldout_prob = param->heldout_prob;
 		data = &(prob->data);
 		nSeq = data->size();
 		D = prob->D;
@@ -26,7 +28,8 @@ class BCFWsolve{
 		eta = param->eta;
 		max_iter = param->max_iter;
 		write_model_period = param->write_model_period;
-		admm_step_size = 1.0;
+		early_terminate = param->early_terminate;
+		admm_step_size = 1.0 / split_up_rate;
 		
 		//bi_search
 		inside = new bool[K*K];
@@ -240,7 +243,8 @@ class BCFWsolve{
 			act_kk_index[i].push_back(make_pair(seq->labels[t]*K + seq->labels[t+1], 0.0));
 		}
 
-
+		Float max_heldout_test_acc = -1;
+		Int terminate_counting = 0;
 		for(Int iter=0;iter<max_iter;iter++){
 			
 			double bi_search_time = 0.0, bi_subSolve_time = 0.0, bi_maintain_time = 0.0;
@@ -467,25 +471,46 @@ class BCFWsolve{
 			nnz_beta /= M;
 			
 			cerr << "i=" << iter;
-			/*if(iter%5==0){
-				calcAcc_time -= get_current_time();
-				cerr << ", Acc=" << train_acc_Viterbi();
-				calcAcc_time += get_current_time();
-				cerr << ", calcAcc=" << calcAcc_time ;
-			}*/
 			cerr << ", nnz_a=" << nnz_alpha << ", nnz_b=" << nnz_beta ;
 			cerr << ", uni_search=" << uni_search_time << ", uni_subSolve=" << uni_subSolve_time << ", uni_maintain=" << uni_maintain_time ;
 			cerr << ", bi_search="  << bi_search_time   << ", bi_subSolve="  << bi_subSolve_time << ", bi_maintain="  << bi_maintain_time ;
 			cerr << ", admm_maintain=" << admm_maintain_time ;
 			cerr << ", area1=" << (double)submat_top/submat_bottom << ", area23=" << (double)line_top/line_bottom << ", area4=" << (double)mat_top/mat_bottom;
-			cerr << endl;
-			if ((iter + 1) % write_model_period == 0){
+			if ((iter+1) % write_model_period == 0){
+				overall_time += get_current_time();
 				Model* model = new Model(w, v, prob);
 				char* name = new char[FNAME_LEN];
 				sprintf(name, "%s.%d", modelFname, (iter+1));
-				cout << name << endl;
 				model->writeModel(name);
+				overall_time -= get_current_time();
 			}
+			if ((iter+1) % split_up_rate == 0 && heldout_prob != NULL){
+				overall_time += get_current_time();
+				Model* model = new Model(w, v, prob);
+				Float heldout_test_acc = model->calcAcc_Viterbi(heldout_prob);
+				cerr << ", heldout Acc=" <<  heldout_test_acc;
+				overall_time -= get_current_time();
+				if ( heldout_test_acc > max_heldout_test_acc){
+					max_heldout_test_acc = heldout_test_acc;
+					terminate_counting = 0;
+				} else {
+					cerr << " (" << (++terminate_counting) << "/" << early_terminate << ")";
+					if (terminate_counting == early_terminate){
+						//need to write final model
+						if ((iter+1) % write_model_period != 0){
+							overall_time += get_current_time();
+							Model* model = new Model(w, v, prob);
+							char* name = new char[FNAME_LEN];
+							sprintf(name, "%s.%d", modelFname, (iter+1));
+							model->writeModel(name);
+							overall_time -= get_current_time();
+						}
+						cerr << endl;
+						break;
+					}
+				}
+			}
+			cerr << endl;
 			//if( p_inf < 1e-4 )
 			//	break;
 			
@@ -512,10 +537,6 @@ class BCFWsolve{
 
 	private:
 	
-	inline double get_current_time(){
-		return (double)clock()/CLOCKS_PER_SEC;
-		//return omp_get_wtime();
-	}
 
 	void uni_subSolve(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new ){ //solve i-th unigram factor
 		//memset(prod, 0.0, sizeof(Float)*K);
@@ -1086,6 +1107,11 @@ class BCFWsolve{
 	char* modelFname;
 	Float eta;
 	Float admm_step_size;
+
+	//heldout set
+	ChainProblem* heldout_prob;
+	//if heldout test accuracy doesn't increase in a few iterations, stop!
+	Int early_terminate;
 
 	//uni_search
 	Int* max_indices;

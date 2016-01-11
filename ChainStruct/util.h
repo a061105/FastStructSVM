@@ -197,6 +197,11 @@ Int argmax( Float* arr, Int size ){
 	return kmax;
 }
 
+inline double get_current_time(){
+	return (double)clock()/CLOCKS_PER_SEC;
+	//return omp_get_wtime();
+}
+
 //shift up, maintain reverse index
 inline void siftUp(Float* heap, Int index){
 	Float cur = heap[index];
