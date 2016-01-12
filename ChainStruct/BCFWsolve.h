@@ -29,8 +29,16 @@ class BCFWsolve{
 		max_iter = param->max_iter;
 		write_model_period = param->write_model_period;
 		early_terminate = param->early_terminate;
-		admm_step_size = 1.0 / split_up_rate;
-		
+		admm_step_size = param->admm_step_size; //1.0/split_up_rate;
+		interval_start = new Int[split_up_rate];
+		interval_end = new Int[split_up_rate];
+		Int length = K / split_up_rate;
+		for (Int i = 0; i < split_up_rate; i++){
+			interval_start[i] = i*length;
+			interval_end[i] = (i+1)*length;
+		}
+		interval_end[split_up_rate-1] = K;
+
 		//bi_search
 		inside = new bool[K*K];
 		memset(inside, 0, sizeof(bool)*K*K);
@@ -186,7 +194,9 @@ class BCFWsolve{
 		//uni_search
 		delete[] max_indices;
 		delete[] w_nz_index;
-		
+		delete[] interval_start;
+		delete[] interval_end;
+
 		//global buffer
 		delete[] grad;
 		delete[] prod;
@@ -214,6 +224,9 @@ class BCFWsolve{
 	Model* solve(){
 	
 		srand(time(NULL));	
+		
+		//dump some parameters
+		cerr << "split_up_rate=" << split_up_rate << ", admm_step_size=" << admm_step_size << ", C=" << C << ", eta=" << eta << endl;
 
 		Int* uni_ind = new Int[N];
 		for(Int i=0;i<N;i++)
@@ -246,7 +259,7 @@ class BCFWsolve{
 		Float max_heldout_test_acc = -1;
 		Int terminate_counting = 0;
 		for(Int iter=0;iter<max_iter;iter++){
-			
+
 			double bi_search_time = 0.0, bi_subSolve_time = 0.0, bi_maintain_time = 0.0;
 			double uni_search_time = 0.0, uni_subSolve_time = 0.0, uni_maintain_time = 0.0;
 			double calcAcc_time = 0.0, admm_maintain_time = 0.0;
@@ -346,10 +359,11 @@ class BCFWsolve{
 					
 				//search using oracle
 				bi_search_time -= get_current_time();
-				if (using_brute_force)
+				if (using_brute_force){
 					bi_brute_force_search(i, n, t, act_kk_index[i]);
-				else
+				}else{
 					bi_search(i, n, t, act_kk_index[i]);
+				}
 				bi_search_time += get_current_time();
 				
 				//subproblem solving
@@ -421,12 +435,14 @@ class BCFWsolve{
 				} 
 				bi_maintain_time += get_current_time();
 			}
-			
-			
+
 			//ADMM update (enforcing consistency)
 			admm_maintain_time -= get_current_time();
 			p_inf = 0.0;
 			Float* cache = new Float[K];
+			Float* infea_left = new Float[K];
+			Float* infea_right = new Float[K];
+			Float infea = 0.0;
 			for(Int n=0;n<nSeq;n++){
 				Seq* seq = data->at(n);
 				for(Int t=0;t<seq->T-1;t++){
@@ -434,11 +450,21 @@ class BCFWsolve{
 					Int i1 = uni_index(n,t);
 					Float* msg_left_i2 = msg_left[i2];
 					Float* msg_right_i2 = msg_right[i2];
-
+					memset(infea_left, 0.0, sizeof(infea_left));
+					memset(infea_right, 0.0, sizeof(infea_right));
 					for (vector<pair<Int, Float>>::iterator it = act_kk_index[i2].begin(); it != act_kk_index[i2].end(); it++){
 						Int k1k2 = it->first;
 						Int k1 = k1k2 / K;
 						Int k2 = k1k2 % K;
+						
+						infea -= fabs(infea_left[k1]);
+						infea_left[k1] += it->second;
+						infea += fabs(infea_left[k1]);
+
+						infea -= fabs(infea_right[k2]);
+						infea_right[k2] += it->second;
+						infea += fabs(infea_right[k2]);
+
 						Float delta_mu_beta = admm_step_size*(it->second);
 						msg_left_i2[k1] += delta_mu_beta;
 						msg_right_i2[k2] += delta_mu_beta;
@@ -446,17 +472,28 @@ class BCFWsolve{
 					for (vector<pair<Int, Float>>::iterator it = act_k_index[i1].begin(); it != act_k_index[i1].end(); it++){
 						Int k = it->first;
 						Float delta_mu_alpha = admm_step_size*it->second;
+
+						infea -= fabs(infea_left[k]);
+						infea_left[k] -= it->second;
+						infea += fabs(infea_left[k]);
+						
 						msg_left_i2[k] -= delta_mu_alpha;
 					}
 					for (vector<pair<Int, Float>>::iterator it = act_k_index[i1+1].begin(); it != act_k_index[i1+1].end(); it++){
 						Int k = it->first;
 						Float delta_mu_alpha = admm_step_size*it->second;
+
+						infea -= fabs(infea_right[k]);
+						infea_right[k] -= it->second;
+						infea += fabs(infea_right[k]);
+						
 						msg_right_i2[k] -= delta_mu_alpha;
 					}
 				}
 			}
+			
 			admm_maintain_time += get_current_time();
-			p_inf /= (2*M*K);
+			infea /= (2*M*K);
 			
 			Float nnz_alpha=0;
 			for(Int i=0;i<N;i++){
@@ -471,6 +508,7 @@ class BCFWsolve{
 			nnz_beta /= M;
 			
 			cerr << "i=" << iter;
+			cerr << ", infea=" << infea;
 			cerr << ", nnz_a=" << nnz_alpha << ", nnz_b=" << nnz_beta ;
 			cerr << ", uni_search=" << uni_search_time << ", uni_subSolve=" << uni_subSolve_time << ", uni_maintain=" << uni_maintain_time ;
 			cerr << ", bi_search="  << bi_search_time   << ", bi_subSolve="  << bi_subSolve_time << ", bi_maintain="  << bi_maintain_time ;
@@ -484,7 +522,7 @@ class BCFWsolve{
 				model->writeModel(name);
 				overall_time -= get_current_time();
 			}
-			if ((iter+1) % split_up_rate == 0 && heldout_prob != NULL){
+			if ((iter+1) % 1 == 0 && heldout_prob != NULL){
 				overall_time += get_current_time();
 				Model* model = new Model(w, v, prob);
 				Float heldout_test_acc = model->calcAcc_Viterbi(heldout_prob);
@@ -494,7 +532,7 @@ class BCFWsolve{
 					max_heldout_test_acc = heldout_test_acc;
 					terminate_counting = 0;
 				} else {
-					cerr << " (" << (++terminate_counting) << "/" << early_terminate << ")";
+					cerr << " (" << (++terminate_counting) << "/" << (early_terminate) << ")";
 					if (terminate_counting == early_terminate){
 						//need to write final model
 						if ((iter+1) % write_model_period != 0){
@@ -644,10 +682,7 @@ class BCFWsolve{
 
 	void uni_search(Int i, Int n, Int t, vector<pair<Int, Float>>& act_k_index){
 		Int rand_interval = rand() % split_up_rate;
-		Int interval_length = K/split_up_rate;
-		Int range_l = rand_interval*interval_length, range_r = range_l+interval_length;
-		if (range_r > K)
-			range_r = K;
+		Int range_l = interval_start[rand_interval], range_r = interval_end[rand_interval];
 
 		Seq* seq = data->at(n);
 		Int yi = seq->labels[t];
@@ -1117,6 +1152,8 @@ class BCFWsolve{
 	Int* max_indices;
 	vector<Int>* w_nz_index;
 	Int split_up_rate = 1;
+	Int* interval_start;
+	Int* interval_end;
 
 	// oriented from beta nodes to its connected alpha nodes
 	// msg_left[i2][k] = beta_suml[i2][k] - alpha[i2_left][k] + mu[i2+0][k]

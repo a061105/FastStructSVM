@@ -218,6 +218,15 @@ class Model{
 				v_k1[k2] = stof(k2_v[1]);
 			}
 		}
+		sparse_v = new vector<pair<Int, Float>>[K];
+		for (Int k1 = 0; k1 < K; k1++){
+			sparse_v[k1].clear();
+			for (Int k2 = 0; k2 < K; k2++){
+				if (fabs(v[k1][k2]) > 1e-12){
+					sparse_v[k1].push_back(make_pair(k2, v[k1][k2]));
+				}
+			}
+		}
 	}
 
 	Model(Float** _w, Float** _v, ChainProblem* prob){
@@ -227,14 +236,31 @@ class Model{
 		label_index_map = &(prob->label_index_map);
 		w = _w;
 		v = _v;
+		sparse_v = new vector<pair<Int, Float>>[K];
+		for (Int k1 = 0; k1 < K; k1++){
+			sparse_v[k1].clear();
+			for (Int k2 = 0; k2 < K; k2++){
+				if (fabs(v[k1][k2]) > 1e-12){
+					sparse_v[k1].push_back(make_pair(k2, v[k1][k2]));
+				}
+			}
+		}
 	}
 	
+	~Model(){
+		for (Int k = 0; k < K; k++){
+		       	sparse_v[k].clear();
+		}
+		delete[] sparse_v;
+	}
+
 	Float** w;
 	Float** v;
 	Int D;
 	Int K;
 	vector<string>* label_name_list;
 	map<string,Int>* label_index_map;
+	vector<pair<Int, Float>>* sparse_v;
 
 	void writeModel( char* fname ){
 
@@ -314,12 +340,20 @@ class Model{
 				for(Int k1=0;k1<K;k1++){
 					Float tmp = max_sum[t-1][k1];
 					Float cand_val;
-					for(Int k2=0;k2<K;k2++){
+					/*for(Int k2=0;k2<K;k2++){
 						 cand_val = tmp + v[k1][k2];
 						 if( cand_val > max_sum[t][k2] ){
 							max_sum[t][k2] = cand_val;
 							argmax_sum[t][k2] = k1;
 						 }
+					}*/
+					for (vector<pair<Int, Float>>::iterator it = sparse_v[k1].begin(); it != sparse_v[k1].end(); it++){
+						Int k2 = it->first; 
+						cand_val = tmp + it->second;
+						if( cand_val > max_sum[t][k2] ){
+							max_sum[t][k2] = cand_val;
+							argmax_sum[t][k2] = k1;
+						}	
 					}
 				}
 				//adding unigram factor
@@ -373,9 +407,10 @@ class Param{
 	int split_up_rate;
 	int write_model_period;
 	int early_terminate;
+	Float admm_step_size;
 	Param(){
 		solver = 0;
-		C = 10.0;
+		C = 1.0;
 		max_iter =100000;
 		eta = 0.1;
 		heldout_prob = NULL;
@@ -383,6 +418,7 @@ class Param{
 		split_up_rate = 1;
 		write_model_period = 0;
 		early_terminate = 3;
+		admm_step_size = 1.0;
 	}
 };
 

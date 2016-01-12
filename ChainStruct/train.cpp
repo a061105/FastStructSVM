@@ -23,6 +23,7 @@ void exit_with_help(){
 	cerr << "-b brute_force search: use naive search (default off)" << endl;
 	cerr << "-w write_model_period: write model file every (arg) iterations (default max_iter)" << endl;
 	cerr << "-e early_terminate: stop if heldout accuracy doesn't increase in (arg) iterations (need -h) (default 3)" << endl;
+	cerr << "-a admm_step_size: admm update step size (default 1.0) " << endl;
 	exit(0);
 }
 
@@ -62,6 +63,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 			case 'w': param->write_model_period = atoi(argv[i]);
 				  break;
 			case 'e': param->early_terminate = atoi(argv[i]);
+				  break;
+			case 'a': param->admm_step_size = atof(argv[i]);
 				  break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;
@@ -111,11 +114,11 @@ int main(int argc, char** argv){
 	if (param->solver == 0){
 		BDMMsolve* solver = new BDMMsolve(param);
 		Model* model = solver->solve();
-		cerr << "Acc=" << model->calcAcc_Viterbi(param->prob) << endl;
+		//cerr << "Acc=" << model->calcAcc_Viterbi(param->prob) << endl;
 	} else {
 		BCFWsolve* solver = new BCFWsolve(param);
 		Model* model = solver->solve();
-		cerr << "Acc=" << model->calcAcc_Viterbi(param->prob) << endl;
+		//cerr << "Acc=" << model->calcAcc_Viterbi(param->prob) << endl;
 	}
 	
 	overall_time += get_current_time();
