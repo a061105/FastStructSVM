@@ -1,6 +1,6 @@
 CXX ?= g++
 CC ?= gcc
-CFLAGS = -w -fopenmp -O3
+CFLAGS = -w -fopenmp -O3 -std=c++11
 LIBS = blas/blas.a
 
 all: clean train
@@ -15,3 +15,13 @@ blas/blas.a: blas/*.c blas/*.h
 	        make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
 clean:
 		rm -f *~ *.o train
+
+scale=subtrain
+data_dir=/scratch/cluster/ianyen/data/
+s=0
+
+bibtex:
+	./train $(data_dir)/multilabel/bibtex.$(scale)
+
+yeast:
+	./train -s $(s) $(data_dir)/multilabel/yeast_$(scale).svm
