@@ -1,5 +1,6 @@
 #include "util.h"
 #include "multilabel.h"
+#include <cassert>
 
 typedef vector<pair<Int, Float>> PairVec;
 
@@ -79,6 +80,21 @@ class BCFWsolve{
 
 			//model that traces w, v
 			model = new Model(w, v, prob);
+			
+			// pre-process positive labels
+			pos_labels = new vector<Int>[N];
+			is_pos_label = new bool*[N]; 
+			for (Int i = 0; i < N; i++){
+				is_pos_label[i] = new bool[K];
+				Instance* ins = data->at(i);
+				pos_labels[i].clear();
+				memset(is_pos_label[i], false, sizeof(bool)*K);
+				for (Labels::iterator it_label = ins->labels.begin(); it_label != ins->labels.end(); it_label++){
+					Int k = *it_label;
+					is_pos_label[i][k] = true;
+					pos_labels[i].push_back(k);
+				}
+			}
 		}
 
 		~BCFWsolve(){
@@ -110,6 +126,12 @@ class BCFWsolve{
 
 			//some constants
 			delete Q_diag;
+
+			//delete cache for positive labels
+			for (Int i = 0; i < N; i++)
+				delete[] is_pos_label[i];
+			delete[] pos_labels;
+			delete[] is_pos_label;
 		}
 
 		Model* solve(){
@@ -241,9 +263,10 @@ class BCFWsolve{
 				alpha_nnz/=N;
 
 				cerr << "i=" << iter << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz 
-					<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj() << ", uAcc=" << train_acc_unigram() << endl;
+					<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj() << ", uAcc=" << train_acc_unigram();
 				if(iter%10==9)
-					cerr << ", Acc=" << train_acc_joint() << endl;
+					cerr << ", Acc=" << train_acc_joint();
+				cerr << endl;
 			}
 			
 
@@ -270,11 +293,7 @@ class BCFWsolve{
 			Float** beta_n = beta[n];
 			Float** mu_n = mu[n];
 			
-			bool* is_pos_label = new bool[K];
-			for(Int k=0;k<K;k++)
-				is_pos_label[k] = false;
-			for(int i=0;i<ins->labels.size();i++)
-				is_pos_label[ ins->labels[i] ] = true;
+			bool* is_pos_label_n = is_pos_label[n];
 			
 			Float* grad = new Float[K];
 			memset(grad, 0.0, sizeof(Float)*K);
@@ -285,7 +304,7 @@ class BCFWsolve{
 				}
 			}
 			for(Int k=0;k<K;k++){
-				if( !is_pos_label[k] )
+				if( !is_pos_label_n[k] )
 					grad[k] += 1.0;
 				else
 					grad[k] += -1.0;
@@ -296,10 +315,35 @@ class BCFWsolve{
 				Int Ki = K*i;
 				for(Int j=i+1;j<K;j++){//from each bigram
 					Float* beta_nij = beta_n[Ki+j];
-					//bigram to left
 					grad[i] -= eta*( beta_nij[2] + beta_nij[3] - alpha_n[i] + mu_n[Ki+j][F_LEFT] );
-					//bigram to right
+					
 					grad[j] -= eta*( beta_nij[1] + beta_nij[3] - alpha_n[j] + mu_n[Ki+j][F_RIGHT] );
+					
+					
+					//bigram to left
+					
+					/*Float beta_nij10 = alpha_n[i] - beta_nij[3] - mu_n[Ki+j][F_LEFT];
+					if (is_pos_label[i] && !is_pos_label[j]){
+						//beta_nij10 \in [0, C]
+						beta_nij10 = min(max(beta_nij10, 0.0), (Float)C);
+					} else {
+						//beta_nij10 \in [-C, 0]
+						beta_nij10 = min(max(beta_nij10, -(Float)C), 0.0);
+					}
+					grad[i] -= eta*( beta_nij10 + beta_nij[3] - alpha_n[i] + mu_n[Ki+j][F_LEFT] );
+					
+					//bigram to right
+					
+					Float beta_nij01 = alpha_n[j] - beta_nij[3] - mu_n[Ki+j][F_RIGHT];
+					if (!is_pos_label[i] && is_pos_label[j]){
+						//beta_nij01 \in [0, C]
+						beta_nij01 = min(max(beta_nij01, 0.0), (Float)C);
+					} else {
+						//beta_nij01 \in [-C, 0]
+						beta_nij01 = min(max(beta_nij01, -(Float)C), 0.0);
+					}
+					grad[j] -= eta*( beta_nij01 + beta_nij[3] - alpha_n[j] + mu_n[Ki+j][F_RIGHT] );
+					*/
 				}
 			}
 
@@ -319,7 +363,6 @@ class BCFWsolve{
 			for(Int k=0;k<K;k++)
 				alpha_new[k] = min( max( alpha_n[k] - grad[k]/Qii, L[k] ), U[k] );
 			
-			delete[] is_pos_label;
 			delete[] grad;
 			delete[] U;
 			delete[] L;
@@ -354,6 +397,8 @@ class BCFWsolve{
 			}
 		}
 
+		
+
 		void bi_subSolve(Int n, Float** beta_new){
 
 			Int Ksq = K*K;
@@ -370,11 +415,7 @@ class BCFWsolve{
 			}
 			Float** mu_n = mu[n];
 			//indicator of ground truth labels
-			bool* is_pos_label = new bool[K];
-			for(Int k=0;k<K;k++)
-				is_pos_label[k] = false;
-			for(vector<int>::iterator it=ins->labels.begin(); it!=ins->labels.end(); it++)
-				is_pos_label[*it] = true;
+			bool* is_pos_label_n = is_pos_label[n];
 			
 			Float Qii = (1.0+eta*2);
 			for(Int i=0;i<K;i++){
@@ -398,7 +439,7 @@ class BCFWsolve{
 					grad[offset + 3] += eta*( beta_nij_right1_sum - alpha_n[j] + mu_n[Ki+j][F_RIGHT] ); //1:11
 					
 					//compute Dk
-					int d_nij = 2*is_pos_label[i] + is_pos_label[j];
+					int d_nij = 2*is_pos_label_n[i] + is_pos_label_n[j];
 					for(Int d=0;d<4;d++){
 
 						Int ind = offset + d;
@@ -418,13 +459,13 @@ class BCFWsolve{
 					b = b / r;
 					
 					//record beta new values
-					for(int d=0;d<4;d++)	
+					for (int d=0;d<4;d++)
 						beta_new[Ki+j][d] = min( (Float)((d!=d_nij)?0.0:C), (b-grad[offset+d])/Qii );
+					
 				}
 			}
 			
 
-			delete[] is_pos_label;
 			delete[] grad;
 			delete[] Dk;
 		}
@@ -563,8 +604,14 @@ class BCFWsolve{
 		Int D;
 		Int K;
 
+		// positive labels
+		vector<Int>* pos_labels; 
+		bool** is_pos_label;	
+
 		Float* Q_diag;
 		PairVec* act_alpha; //N*K dual variables for unigram factor
+		
+		vector<pair<Int, Float*>>* act_beta;
 		Float*** beta; //N*M*4 dual variables for bigram factor (allocate N*K^2 instead of N*M for convenience)
 
 		Float** w; //D*K primal variables for unigram factor

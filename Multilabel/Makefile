@@ -18,7 +18,7 @@ clean:
 
 scale=subtrain
 data_dir=/scratch/cluster/ianyen/data/
-s=0
+s=1
 
 bibtex:
 	./train $(data_dir)/multilabel/bibtex.$(scale)
