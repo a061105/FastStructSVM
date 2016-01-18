@@ -28,6 +28,11 @@ class BCFWsolve{
 			for(Int i=0;i<N;i++){
 				act_alpha[i].clear();
 			}
+
+			act_beta = new vector<pair<Int, Float*>>[N];
+			for(Int i=0;i<N;i++){
+				act_beta[i].clear(); 
+			}
 			beta = new Float**[N];
 			for(Int n=0;n<N;n++){
 				beta[n] = new Float*[K*K];
@@ -82,25 +87,36 @@ class BCFWsolve{
 			model = new Model(w, v, prob);
 			
 			// pre-process positive labels
-			pos_labels = new vector<Int>[N];
 			is_pos_label = new bool*[N]; 
 			for (Int i = 0; i < N; i++){
 				is_pos_label[i] = new bool[K];
 				Instance* ins = data->at(i);
-				pos_labels[i].clear();
+				sort(ins->labels.begin(), ins->labels.end(), less<Int>());
+				if (ins->labels.size() > 1)
+					assert(ins->labels[0] < ins->labels[1]);
 				memset(is_pos_label[i], false, sizeof(bool)*K);
 				for (Labels::iterator it_label = ins->labels.begin(); it_label != ins->labels.end(); it_label++){
 					Int k = *it_label;
 					is_pos_label[i][k] = true;
-					pos_labels[i].push_back(k);
 				}
 			}
+
+			//global cache
+			grad = new Float[K*K*4];
+			memset(grad, 0.0, sizeof(Float)*K*K*4);
 		}
 
 		~BCFWsolve(){
 
 			//dual variables
 			delete[] act_alpha;
+			for (Int i = 0; i < N; i++){
+				for (vector<pair<Int, Float*>>::iterator it = act_beta[i].begin(); it != act_beta[i].end(); it++){
+					delete[] it->second;
+				}
+			}
+			delete[] act_beta;
+
 			//for(Int i=0;i<M;i++)
 			//	delete[] beta[i];
 			//delete[] beta;
@@ -130,8 +146,10 @@ class BCFWsolve{
 			//delete cache for positive labels
 			for (Int i = 0; i < N; i++)
 				delete[] is_pos_label[i];
-			delete[] pos_labels;
 			delete[] is_pos_label;
+
+			//global cache
+			delete[] grad;
 		}
 
 		Model* solve(){
@@ -154,6 +172,16 @@ class BCFWsolve{
 				}
 			}	
 		
+			for (Int n = 0; n < N; n++){
+				Instance* ins = data->at(n);
+				for (Labels::iterator it_label = ins->labels.begin(); it_label != ins->labels.end(); it_label++){
+					for (Labels::iterator it_label2 = it_label+1; it_label2 != ins->labels.end(); it_label2++){
+						Int i = *it_label, j = *it_label2;
+						act_beta[n].push_back(make_pair(K*i+j, new Float[4]));
+					}
+				}
+			}
+				
 			Float p_inf;
 			for(Int iter=0;iter<max_iter;iter++){
 
@@ -192,6 +220,9 @@ class BCFWsolve{
 
 				for(Int r=0;r<N;r++){
 					Int n = sample_index[r];
+
+					bi_search(n, act_beta[n]);
+				
 					//subproblem solving
 					bi_subSolve(n, beta_new);
 
@@ -362,8 +393,8 @@ class BCFWsolve{
 
 			for(Int k=0;k<K;k++)
 				alpha_new[k] = min( max( alpha_n[k] - grad[k]/Qii, L[k] ), U[k] );
-			
-			delete[] grad;
+		
+			delete[] grad;	
 			delete[] U;
 			delete[] L;
 		}
@@ -395,6 +426,7 @@ class BCFWsolve{
 			if (prod[max_index] > -1){
 				act_alpha_n.push_back(make_pair(max_index, 0.0));
 			}
+			delete[] prod;
 		}
 
 		
@@ -402,7 +434,6 @@ class BCFWsolve{
 		void bi_subSolve(Int n, Float** beta_new){
 
 			Int Ksq = K*K;
-			Float* grad = new Float[Ksq*4];
 			Float* Dk = new Float[Ksq*4];
 
 			//data
@@ -466,8 +497,50 @@ class BCFWsolve{
 			}
 			
 
-			delete[] grad;
 			delete[] Dk;
+		}
+
+		void bi_search(Int n, vector<pair<Int, Float*>>& act_beta_n){
+			memset(grad, 0.0, sizeof(Float)*K*K*3);
+			
+			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
+				Int offset = it_beta->first;
+				grad[offset+0] = -INFI;
+				grad[offset+1] = -INFI;
+				grad[offset+2] = -INFI;
+				grad[offset+3] = -INFI;
+			}
+			
+			/*for (vector<pair<Int, Float*>>& it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
+				Int offset = it_beta->first;
+				Int i = offset / K;
+				Int j = offset % K;
+				Float* beta_nij = it_beta->second;
+				grad[offset+3] = v[i][j] + beta_nij[2] + beta_nij[3]*2 + beta_nij[1];
+				grad[offset+2] = beta_nij[2] + beta_nij[3];
+				grad[offset+1] = beta_nij[1] + beta_nij[3];
+			}*/
+			
+			Instance* ins = data->at(n);
+			Labels* pos_labels = &(ins->labels);
+
+			//area 1; y^n_i = y^n_j = 1
+			for (Labels::iterator it_label = pos_labels->begin(); it_label != pos_labels->end(); it_label++){
+				Int i = *it_label;
+				for (Labels::iterator it_label2 = it_label+1; it_label2 != pos_labels->end(); it_label2++){
+					Int j = *it_label2;
+					
+				}
+			}
+			
+			/*for (Int i = 0; i < K; i++){
+				for (Int j = i+1; j < K; j++){
+					if (is_pos_label_n[i] && is_pos_label_n[j]) 
+						continue;
+					Float* beta_nij = beta_n;
+					Float val = v[i][j] + eta;
+				}
+			}*/
 		}
 
 		Float train_acc_unigram(){
@@ -607,6 +680,9 @@ class BCFWsolve{
 		// positive labels
 		vector<Int>* pos_labels; 
 		bool** is_pos_label;	
+
+		//global cache
+		Float* grad; // K*K*4 array
 
 		Float* Q_diag;
 		PairVec* act_alpha; //N*K dual variables for unigram factor
