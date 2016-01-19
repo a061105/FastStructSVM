@@ -203,10 +203,13 @@ class BCFWsolve{
 			}*/
 				
 			Float p_inf;
+			Float alpha_nnz = 0.0;
+			Float beta_nnz = 0.0;
 			for(Int iter=0;iter<max_iter;iter++){
 
 				random_shuffle(sample_index, sample_index+N);
 				//update unigram dual variables
+				alpha_nnz = 0.0;
 				for(Int r=0;r<N;r++){
 
 					Int n = sample_index[r];	
@@ -234,12 +237,14 @@ class BCFWsolve{
 					for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
 						it_alpha->second = alpha_new[it_alpha->first];
 					}
+					alpha_nnz += act_alpha[n].size();
 				}
+				alpha_nnz /= N;
 			
 				//cout << "alpha_done" << endl;	
 				//update bigram dual variables	
 				random_shuffle(sample_index, sample_index+N);
-
+				beta_nnz = 0.0;
 				for(Int r=0;r<N;r++){
 					Int n = sample_index[r];
 
@@ -261,8 +266,8 @@ class BCFWsolve{
 						for(Int j=i+1;j<K;j++)
 							v[i][j] += beta_new[Ki+j][3] - beta_n[Ki+j][3];
 					}*/
-					vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
-					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n->begin(); it_beta != act_beta_n->end(); it_beta++){
+					vector<pair<Int, Float*>>& act_beta_n = act_beta[n];
+					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
 						Int offset = it_beta->first;
 						Float* beta_nij = it_beta->second;
 						Int i = offset / K, j = offset % K;
@@ -277,13 +282,23 @@ class BCFWsolve{
 								beta_n[Ki+j][y1y2] = beta_new[Ki+j][y1y2];
 						}
 					}*/
-					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n->begin(); it_beta != act_beta_n->end(); it_beta++){
+					vector<pair<Int, Float*>> tmp_vec;
+					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
 						Int offset = it_beta->first;
 						Float* beta_nij = it_beta->second;
-						for (Int d = 0; d < 4; d++)
+						for (Int d = 0; d < 4; d++){
 							beta_nij[d] = beta_new[offset][d];
+						}
+						if (fabs(beta_nij[3]) > 1e-12){
+							tmp_vec.push_back(make_pair(offset, beta_nij));
+						} else {
+							delete[] beta_nij;
+						}
 					}
+					act_beta_n = tmp_vec;
+					beta_nnz += act_beta_n.size();
 				}
+				beta_nnz /= N;
 
 				//ADMM update (enforcing consistency)
 				/*
@@ -346,7 +361,7 @@ class BCFWsolve{
 				}
 				alpha_nnz/=N;
 				*/
-				cerr << "i=" << iter; // << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz 
+				cerr << "i=" << iter << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz;
 					//<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj();// << ", uAcc=" << train_acc_unigram();
 				if(iter%10==9)
 					cerr << ", Acc=" << train_acc_joint();
