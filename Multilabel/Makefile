@@ -16,7 +16,7 @@ blas/blas.a: blas/*.c blas/*.h
 clean:
 		rm -f *~ *.o train
 
-scale=subtrain
+scale=train
 data_dir=/scratch/cluster/ianyen/data/
 s=1
 
