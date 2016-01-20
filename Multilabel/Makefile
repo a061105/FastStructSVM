@@ -21,7 +21,7 @@ data_dir=/scratch/cluster/ianyen/data/
 s=1
 
 bibtex:
-	./train $(data_dir)/multilabel/bibtex.$(scale)
+	./train -s $(s) -m 10000 $(data_dir)/multilabel/bibtex.$(scale)
 
 yeast:
-	./train -s $(s) $(data_dir)/multilabel/yeast_$(scale).svm
+	./train -s $(s) -m 10000 $(data_dir)/multilabel/yeast_$(scale).svm

@@ -213,10 +213,8 @@ class BDMMsolve{
 					for(Int i=0;i<K;i++){
 						Int Ki = K*i;
 						for(Int j=i+1; j<K; j++){
-							for(Int d=0;d<4;d++){
-								if( fabs(beta[n][Ki+j][d]) > 1e-6 )
-									beta_nnz+=1.0;
-							}
+							if( fabs(beta[n][Ki+j][3]) > 1e-6 )
+								beta_nnz+=1.0;
 						}
 					}
 				}
@@ -225,12 +223,11 @@ class BDMMsolve{
 				double alpha_nnz=0.0;
 				for(Int n=0;n<N;n++){
 					for(Int k=0;k<K;k++){
-						if( fabs(alpha[n][k]) > 0.0 )
+						if( fabs(alpha[n][k]) > 1e-6 )
 							alpha_nnz += 1.0;
 					}
 				}
 				alpha_nnz/=N;
-
 				cerr << "i=" << iter << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz 
 					<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj() << ", uAcc=" << train_acc_unigram() << endl;
 				if(iter%10==9)

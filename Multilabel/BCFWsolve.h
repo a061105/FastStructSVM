@@ -331,7 +331,7 @@ class BCFWsolve{
 				beta_nnz /= N;
 
 				//ADMM update (enforcing consistency)
-				/*
+				
 				Float* mu_ij;
 				Float p_inf_nij;
 				p_inf = 0.0;
@@ -340,10 +340,11 @@ class BCFWsolve{
 					Float** beta_n = beta[n];
 					Float* alpha_n = new Float[K];
 					memset(alpha_n, 0.0, sizeof(Float)*K);
-					PairVec* ever_act_alpha_n = &(act_alpha[n]);
-				//	for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
-				//		alpha_n[it_alpha->first] = it_alpha->second;	
-				//	}
+					vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
+					Float** mu_n = mu[n];
+					for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+						alpha_n[it_alpha->first] = it_alpha->second;
+					}
 				//	for(Int i=0;i<K;i++){
 				//		Int Ki = K*i;
 				//		for(Int j=i+1;j<K;j++){
@@ -360,17 +361,24 @@ class BCFWsolve{
 				//	}
 
 					// adds act_beta
-					for(PairVec::iterator it_ever = ever_act_alpha_n.begin(); it_ever != ever_act_alpha_n.end(); it_ever++){
-						Int i = it_ever->first;
-						for(PairVec::iterator it_ever2 = it_ever+1; it_ever2 != ever_act_alpha_n.end(); it_ever2++){
-							Int j = it_ever2->first;
-							mu_ij[F_LEFT] -= alpha_n[i];
-							mu_ij[F_RIGHT] -= alpha_n[i];
+					for(vector<Int>::iterator it_ever = ever_act_alpha_n->begin(); it_ever != ever_act_alpha_n->end(); it_ever++){
+						Int i = *it_ever;
+						Int Ki = K*i;
+						for(vector<Int>::iterator it_ever2 = it_ever+1; it_ever2 != ever_act_alpha_n->end(); it_ever2++){
+							Int j = *it_ever2;
+							mu_n[Ki+j][F_LEFT] -= alpha_n[i]*admm_step_size;
+							mu_n[Ki+j][F_RIGHT] -= alpha_n[j]*admm_step_size;
 						}
+					}
+					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta[n].begin(); it_beta != act_beta[n].end(); it_beta++){
+						Int offset = it_beta->first;
+						Float* beta_nij = it_beta->second;
+						mu_n[offset][F_LEFT] += (beta_nij[2] + beta_nij[3]) * admm_step_size;
+						mu_n[offset][F_RIGHT] += (beta_nij[1] + beta_nij[3]) * admm_step_size;
 					}
 				}
 				p_inf /= (N);
-				*/
+				
 				/*double beta_nnz=0.0;
 				for(Int n=0;n<N;n++){
 					for(Int i=0;i<K;i++){
@@ -393,7 +401,7 @@ class BCFWsolve{
 				*/
 				cerr << "i=" << iter << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz;
 					//<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj();// << ", uAcc=" << train_acc_unigram();
-				if((iter+1)%100==0)
+				if((iter+1)%10==0)
 					cerr << ", Acc=" << train_acc_joint();
 				cerr << endl;
 			}
