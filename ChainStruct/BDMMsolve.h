@@ -130,12 +130,13 @@ class BDMMsolve{
 				Int i = uni_ind[r];
 				Int n, t;
 				get_uni_rev_index(i, n, t);
-
+				Seq* seq = data->at(n);
+				
 				//subproblem solving
-				uni_subSolve(i, n, t, alpha_new);
+				Float loss_per_node = 1.0/seq->T;
+				uni_subSolve(i, n, t, alpha_new, loss_per_node);
 				//maIntain relationship between w and alpha
 				Float* alpha_i = alpha[i];
-				Seq* seq = data->at(n);
 				SparseVec* xi = seq->features[t];
 				for(SparseVec::iterator it=xi->begin(); it!=xi->end(); it++){
 					Int j = it->first;
@@ -224,12 +225,11 @@ class BDMMsolve{
 							//maintain messages(mu) = (E*beta-alpha+\frac{1}{eta}mu)
 							//msg_ij[k] += mu_ij[k] - mu_ijk;
 							//compute infeasibility of consistency constraInt
-							p_inf += fabs(p_inf_ijk);
+							p_inf = max( p_inf, fabs(p_inf_ijk) );
 						}
 					}
 				}
 			}
-			p_inf /= (2*M*K);
 			
 			double beta_nnz=0.0;
 			for(Int i=0;i<M;i++){
@@ -250,8 +250,8 @@ class BDMMsolve{
 				}
 			}
 			alpha_nnz/=N;
-
-			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi() << ", beta_nnz=" << beta_nnz << ", alpha_nnz=" << alpha_nnz  << endl;
+			
+			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi() << ", beta_nnz=" << beta_nnz << ", alpha_nnz=" << alpha_nnz <<  endl;
 			//if( p_inf < 1e-4 )
 			//	break;
 			
@@ -268,7 +268,7 @@ class BDMMsolve{
 
 	private:
 	
-	void uni_subSolve(Int i, Int n, Int t, Float* alpha_new){ //solve i-th unigram factor
+	void uni_subSolve(Int i, Int n, Int t, Float* alpha_new, Float loss_on_node){ //solve i-th unigram factor
 		
 		Float* grad = new Float[K];
 		Float* Dk = new Float[K];
@@ -306,7 +306,7 @@ class BDMMsolve{
 
 		for(Int k=0;k<K;k++){
 			if( k!=yi )
-				grad[k] = 1.0 - Qii*alpha_i[k];
+				grad[k] = loss_on_node - Qii*alpha_i[k];
 			else
 				grad[k] = -Qii*alpha_i[k];
 		}
@@ -649,7 +649,7 @@ class BDMMsolve{
 					}
 			}
 		}
-
+		
 		Float bi_obj = 0.0;
 		for(Int j=0;j<K;j++){
 			for(Int k=0;k<K;k++)
@@ -657,7 +657,7 @@ class BDMMsolve{
 		}
 		bi_obj/=2.0;
 			
-		Float p_inf_ijk;
+		/*Float p_inf_ijk;
 		Float* marg_ij = new Float[K];
 		Float p_inf = 0.0;
 		for(Int n=0;n<nSeq;n++){
@@ -679,8 +679,8 @@ class BDMMsolve{
 		}
 		p_inf *= eta/2.0;
 		delete[] marg_ij;
-
-		return uni_obj + bi_obj + p_inf;
+		*/
+		return uni_obj + bi_obj;// + p_inf;
 	}
 
 
