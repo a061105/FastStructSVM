@@ -450,8 +450,8 @@ class BCFWsolve{
 					Int i1 = uni_index(n,t);
 					Float* msg_left_i2 = msg_left[i2];
 					Float* msg_right_i2 = msg_right[i2];
-					memset(infea_left, 0.0, sizeof(infea_left));
-					memset(infea_right, 0.0, sizeof(infea_right));
+					memset(infea_left, 0.0, sizeof(Float)*K);
+					memset(infea_right, 0.0, sizeof(Float)*K);
 					for (vector<pair<Int, Float>>::iterator it = act_kk_index[i2].begin(); it != act_kk_index[i2].end(); it++){
 						Int k1k2 = it->first;
 						Int k1 = k1k2 / K;
@@ -493,7 +493,7 @@ class BCFWsolve{
 			}
 			
 			admm_maintain_time += get_current_time();
-			infea /= (2*M*K);
+			infea /= (2*M);
 			
 			Float nnz_alpha=0;
 			for(Int i=0;i<N;i++){
