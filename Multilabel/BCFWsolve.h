@@ -21,7 +21,7 @@ class BCFWsolve{
 			C = param->C;
 			eta = param->eta;
 			max_iter = param->max_iter;
-			admm_step_size = 0.0;
+			admm_step_size = 0.1;
 
 			//allocate dual variables
 			act_alpha = new PairVec[N];
@@ -223,6 +223,9 @@ class BCFWsolve{
 			for(Int iter=0;iter<max_iter;iter++){
 
 				random_shuffle(sample_index, sample_index+N);
+				double uni_search_time = 0.0, uni_subSolve_time = 0.0, uni_maintain_time = 0.0;
+				double bi_search_time = 0.0,  bi_subSolve_time = 0.0,  bi_maintain_time = 0.0;
+				double admm_maintain_time = 0.0;
 				//update unigram dual variables
 				alpha_nnz = 0.0;
 				for(Int r=0;r<N;r++){
@@ -230,13 +233,18 @@ class BCFWsolve{
 					Int n = sample_index[r];
 	
 					//cout << "uni search:enter" << endl;
+					uni_search_time -= omp_get_wtime();
 					uni_search(n, act_alpha[n]);
+					uni_search_time += omp_get_wtime();
 					//cout << "uni search:exit" << endl;
 
 					//subproblem solving
+					uni_subSolve_time -= omp_get_wtime();
 					uni_subSolve(n, alpha_new);
+					uni_subSolve_time += omp_get_wtime();
 
 					//maIntain relationship between w and alpha
+					uni_maintain_time -= omp_get_wtime();
 					Instance* ins = data->at(n);
 					
 					for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
@@ -268,6 +276,7 @@ class BCFWsolve{
 					act_alpha[n] = tmp_vec;
 
 					alpha_nnz += act_alpha[n].size();
+					uni_maintain_time += omp_get_wtime();
 				}
 				alpha_nnz /= N;
 			
@@ -279,7 +288,9 @@ class BCFWsolve{
 					Int n = sample_index[r];
 
 					//cout << "bi search:enter" << endl;
+					bi_search_time -= omp_get_wtime();
 					bi_search(n, act_beta[n]);
+					bi_search_time += omp_get_wtime();
 					/*if (iter >= K*K){
 						//cout << "size=" << act_beta[n].size() << endl;
 						assert(act_beta[n].size() >= K*(K-1)/2);
@@ -287,7 +298,9 @@ class BCFWsolve{
 					//cout << "bi search:exit" << endl;
 				
 					//subproblem solving
+					bi_subSolve_time -= omp_get_wtime();
 					bi_subSolve(n, beta_new);
+					bi_subSolve_time += omp_get_wtime();
 
 					//maIntain relationship between v and beta
 					/*Float** beta_n = beta[n];
@@ -296,6 +309,7 @@ class BCFWsolve{
 						for(Int j=i+1;j<K;j++)
 							v[i][j] += beta_new[Ki+j][3] - beta_n[Ki+j][3];
 					}*/
+					bi_maintain_time -= omp_get_wtime();
 					vector<pair<Int, Float*>>& act_beta_n = act_beta[n];
 					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
 						Int offset = it_beta->first;
@@ -327,11 +341,12 @@ class BCFWsolve{
 					}
 					act_beta_n = tmp_vec;
 					beta_nnz += act_beta_n.size();
+					bi_maintain_time += omp_get_wtime();
 				}
 				beta_nnz /= N;
 
 				//ADMM update (enforcing consistency)
-				
+				admm_maintain_time -= omp_get_wtime();
 				Float* mu_ij;
 				Float p_inf_nij;
 				p_inf = 0.0;
@@ -377,8 +392,9 @@ class BCFWsolve{
 						mu_n[offset][F_RIGHT] += (beta_nij[1] + beta_nij[3]) * admm_step_size;
 					}
 				}
-				p_inf /= (N);
-				
+				p_inf /= (N);	
+				admm_maintain_time += omp_get_wtime();
+
 				/*double beta_nnz=0.0;
 				for(Int n=0;n<N;n++){
 					for(Int i=0;i<K;i++){
@@ -400,8 +416,11 @@ class BCFWsolve{
 				alpha_nnz/=N;
 				*/
 				cerr << "i=" << iter << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz;
+				cerr << ", uni_search=" << uni_search_time << ", uni_subSolve=" << uni_subSolve_time << ", uni_maintain_time=" << uni_maintain_time;
+				cerr << ", bi_search="  << bi_search_time  << ", bi_subSolve="  << bi_subSolve_time  << ", bi_maintain_time="  << bi_maintain_time;
+				cerr << ", admm_maintain="  << admm_maintain_time;
 					//<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj();// << ", uAcc=" << train_acc_unigram();
-				if((iter+1)%10==0)
+				if((iter+1)%100==0)
 					cerr << ", Acc=" << train_acc_joint();
 				cerr << endl;
 			}
@@ -854,7 +873,7 @@ class BCFWsolve{
 		
 		Float train_acc_joint(){
 			
-			Int Ns = N/10;
+			Int Ns = N/50;
 
 			Int hit=0;
 			Int* pred = new Int[K];

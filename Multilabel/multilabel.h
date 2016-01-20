@@ -36,6 +36,16 @@ class MultilabelProblem{
 			if( line_str.length() < 2 && fin.eof() )
 				break;
 			
+			size_t found = line_str.find("  ");
+			while (found != string::npos){
+				line_str = line_str.replace(found, 2, " ");
+				found = line_str.find("  ");
+			}
+			found = line_str.find(", ");
+			while (found != string::npos){
+				line_str = line_str.replace(found, 2, ",");
+				found = line_str.find(", ");
+			}
 			vector<string> tokens = split(line_str, " ");
 			//get label index
 			Instance* ins = new Instance();
@@ -47,16 +57,17 @@ class MultilabelProblem{
 					st++;
 					continue;
 				}
-				while (*(tokens[st].end()-1) == ','){
-					tokens[st].erase(tokens[st].end()-1);
+				vector<string> subtokens = split(tokens[st], ",");
+				for (vector<string>::iterator it_str = subtokens.begin(); it_str != subtokens.end(); it_str++){
+					string str = *it_str;
+					if( (it=label_index_map.find(str)) == label_index_map.end() ){
+						ins->labels.push_back(label_index_map.size());
+						label_index_map.insert(make_pair(str, ins->labels.back()));
+					}else{
+						ins->labels.push_back(it->second);
+					}
+					st++;
 				}
-				if( (it=label_index_map.find(tokens[st])) == label_index_map.end() ){
-					ins->labels.push_back(label_index_map.size());
-					label_index_map.insert(make_pair(tokens[st], ins->labels.at(st)));
-				}else{
-					ins->labels.push_back(it->second);
-				}
-				st++;
 			}
 
 			for(Int i=st;i<tokens.size();i++){
