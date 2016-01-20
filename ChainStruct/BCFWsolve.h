@@ -291,10 +291,11 @@ class BCFWsolve{
 				uni_search(i, n, t, act_k_index[i]);
 				uni_search_time += get_current_time();
 				
-
+				
 				//subproblem solving
+				Float loss_per_node = 1.0/seq->T;
 				uni_subSolve_time -= get_current_time();
-				uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new);
+				uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
 				uni_subSolve_time += get_current_time();
 				//maIntain relationship between w and alpha
 				uni_maintain_time -= get_current_time();
@@ -576,7 +577,7 @@ class BCFWsolve{
 	private:
 	
 
-	void uni_subSolve(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new ){ //solve i-th unigram factor
+	void uni_subSolve(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node ){ //solve i-th unigram factor
 		//memset(prod, 0.0, sizeof(Float)*K);
 		//data
 		Seq* seq = data->at(n);
@@ -602,9 +603,9 @@ class BCFWsolve{
 		for(Int it = 0; it < size_grad_heap; it++){
 			pair<Int, Float> p = act_uni_index[it];
 			Int k = p.first;
-			prod[it] = 1.0 - Qii*p.second - eta*(msg_to_right[k]+msg_to_left[k]);
+			prod[it] = loss_per_node - Qii*p.second - eta*(msg_to_right[k]+msg_to_left[k]);
 		}
-		prod[0] -= 1.0;
+		prod[0] -= loss_per_node;
 
 		/*for(vector<pair<Int, Float>>::iterator it = act_uni_index.begin(); it != act_uni_index.end(); it++){
 			Int k = it->first;
