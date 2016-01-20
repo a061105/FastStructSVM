@@ -27,4 +27,4 @@ yeast:
 	./train -s $(s) -m 10000 $(data_dir)/multilabel/yeast_$(scale).svm
 
 rcv1_regions:
-	./train -s $(s) -m 10000 $(data_dir)/multilabel/rcv1_regions_test.5k #$(scale).svm
+	./train -s $(s) -m 10000 $(data_dir)/multilabel/rcv1_regions_$(scale).svm #test.5k #$(scale).svm
