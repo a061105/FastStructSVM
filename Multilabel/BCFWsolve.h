@@ -21,7 +21,7 @@ class BCFWsolve{
 			C = param->C;
 			eta = param->eta;
 			max_iter = param->max_iter;
-			admm_step_size = 0.1;
+			admm_step_size = 0.0;
 
 			//allocate dual variables
 			act_alpha = new PairVec[N];
@@ -121,13 +121,16 @@ class BCFWsolve{
 			}
 
 			//maintain heap for v[i][j]
-			v_heap = new pair<Float, Int>[K*K];
+			v_heap_size = 0;
+			v_heap = new pair<Float, Int>[(K*(K-1))/2];
 			v_index = new Int[K*K];
-			for (Int ij = 0; ij < K*K; ij++){
-				v_heap[ij] = make_pair(0.0, ij);
-				v_index[ij] = ij;
+			for (Int i = 0; i < K; i++){
+				for (Int j = i+1; j < K; j++){
+					Int ij = K*i+j;
+					v_heap[v_heap_size] = make_pair(0.0, ij);
+					v_index[ij] = v_heap_size++;
+				}
 			}
-			v_heap_size = K*K;
 		}
 
 		~BCFWsolve(){
@@ -460,7 +463,7 @@ class BCFWsolve{
 				cerr << ", area4=" << (Float)mat_top/mat_bottom;
 				mat_top = mat_bottom = 0;
 					//<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj();// << ", uAcc=" << train_acc_unigram();
-				if((iter+1)%100==0)
+				if((iter+1)%10==0)
 					cerr << ", Acc=" << train_acc_joint();
 				cerr << endl;
 			}
@@ -684,6 +687,7 @@ class BCFWsolve{
 			//indicator of ground truth labels
 			bool* is_pos_label_n = is_pos_label[n];
 
+			
 			Float Qii = (1.0+eta*2);
 			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n->begin(); it_beta != act_beta_n->end(); it_beta++){
 					Int offset = it_beta->first;
@@ -699,10 +703,13 @@ class BCFWsolve{
 					//compute gradient
 					for(int d=0;d<4;d++)
 						//grad[offset+d] = - Qii*beta_n[Ki+j][d];
-						grad[d] = - Qii*beta_nij[d];					
+						grad[d] = - Qii*beta_nij[d];	
 
 					grad[3] += v[i][j];
-
+					assert(alpha_n != NULL);
+					assert(mu_nij != NULL);
+					assert(beta_nij != NULL);
+					assert(i < j);
 					//Float beta_nij_left1_sum = beta_n[Ki+j][2]+beta_n[Ki+j][3];
 					Float msg_L = beta_nij[2]+beta_nij[3] - alpha_n[i] + mu_nij[F_LEFT];
 					grad[2] += eta*( msg_L ); //2:10
@@ -902,6 +909,7 @@ class BCFWsolve{
 				Int offset = p.second;
 				Int i = offset / K;
 				Int j = offset % K;
+				assert(i < j);
 				if (v[i][j] <= max_val){
 					continue;
 				}
