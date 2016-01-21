@@ -10,6 +10,7 @@ class BDMMsolve{
 		
 		//Parse info from ChainProblem
 		prob = param->prob;
+		heldout_prob = param->heldout_prob;
 		data = &(prob->data);
 		nSeq = data->size();
 		D = prob->D;
@@ -19,7 +20,10 @@ class BDMMsolve{
 		eta = param->eta;
 		max_iter = param->max_iter;
 		admm_step_size = 1.0;
-		
+		early_terminate = param->early_terminate;
+		if (early_terminate <= 0)
+			early_terminate = 3;	
+	
 		//Compute unigram and bigram offset[i] = \sum_{j=1}^{i-1} T_j
 		compute_offset();
 		N = uni_offset[nSeq-1] + data->at(nSeq-1)->T; //#unigram factor
@@ -121,6 +125,8 @@ class BDMMsolve{
 		Float* beta_new = new Float[K*K];
 		Float* marg_ij = new Float[K];
 		Float p_inf;
+		Float max_heldout_test_acc = 0.0;
+		Int terminate_counting = 0;
 		for(Int iter=0;iter<max_iter;iter++){
 			
 			random_shuffle(uni_ind, uni_ind+N);
@@ -251,7 +257,25 @@ class BDMMsolve{
 			}
 			alpha_nnz/=N;
 			
-			cerr << "i=" << iter << ", infea=" << p_inf << ", Acc=" << train_acc_Viterbi() << ", beta_nnz=" << beta_nnz << ", alpha_nnz=" << alpha_nnz <<  endl;
+			cerr << "i=" << iter << ", infea=" << p_inf << ", nnz_a=" << alpha_nnz << ", nnz_b=" << beta_nnz;
+			if ((iter+1) % 1 == 0 && heldout_prob != NULL){	
+				Model* model = new Model(w, v, prob);
+				Float heldout_test_acc = model->calcAcc_Viterbi(heldout_prob);
+				cerr << ", heldout Acc=" <<  heldout_test_acc;
+				if ( heldout_test_acc > max_heldout_test_acc){
+					max_heldout_test_acc = heldout_test_acc;
+					terminate_counting = 0;
+				} else {
+					cerr << " (" << (++terminate_counting) << "/" << (early_terminate) << ")";
+					if (terminate_counting == early_terminate){
+						cerr << endl;
+						break;	
+					}
+				}
+			} else {
+				cerr << ", train acc=" << train_acc_Viterbi();
+			}
+			cerr <<  endl;
 			//if( p_inf < 1e-4 )
 			//	break;
 			
@@ -686,6 +710,10 @@ class BDMMsolve{
 
 	ChainProblem* prob;
 	
+	//for heldout option
+	ChainProblem* heldout_prob;
+	Int early_terminate;
+	
 	vector<Seq*>* data;
 	Float C;
 	Int nSeq;
@@ -695,6 +723,7 @@ class BDMMsolve{
 	Int K;
 	Int* uni_offset;
 	Int* bi_offset;
+
 	
 	Float* Q_diag;
 	Float** alpha; //N*K dual variables for unigram factor

@@ -20,7 +20,7 @@ pos:
 
 speech:
 	$(eval train_file := /scratch/cluster/ianyen/data/speech/speech.$(scale))
-	$(eval heldout_file := /scratch/cluster/ianyen/data/speech/speech.test)
+	$(eval heldout_file := /scratch/cluster/ianyen/data/speech/speech.subtrain)
 	$(eval model := model)
 	./train -s $(s) -q $(q) -a $(a) -m $(m) $(opt) -e $(e) -h $(heldout_file) $(train_file) $(model) 
 
