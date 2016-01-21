@@ -4,6 +4,8 @@
 
 typedef vector<pair<Int, Float>> PairVec;
 
+extern double overall_time;
+
 class BCFWsolve{
 
 	public:
@@ -13,15 +15,28 @@ class BCFWsolve{
 
 			//Parse info from ChainProblem
 			prob = param->prob;
+			heldout_prob = param->heldout_prob;
 			data = &(prob->data);
 			N = data->size();
 			D = prob->D;
 			K = prob->K;
 
+			Float d = 0.0;
+			for (vector<Instance*>::iterator it_data = data->begin(); it_data != data->end(); it_data++){
+				Instance* ins = *it_data;
+				d += ins->feature.size();	
+			}
+			d /= N;
+			cerr << "d=" << d << endl;
 			C = param->C;
 			eta = param->eta;
 			max_iter = param->max_iter;
-			admm_step_size = 0.0;
+			admm_step_size = param->admm_step_size;
+			early_terminate = param->early_terminate;
+
+			if (early_terminate == -1){
+				early_terminate = 10;
+			}
 
 			//allocate dual variables
 			act_alpha = new PairVec[N];
@@ -245,6 +260,8 @@ class BCFWsolve{
 			Float alpha_nnz = 0.0;
 			Float beta_nnz = 0.0;
 			Float ever_alpha_nnz = 0.0;
+			Float max_heldout_test_acc = 0.0;
+			Int terminate_counting = 0;
 			for(Int iter=0;iter<max_iter;iter++){
 
 				random_shuffle(sample_index, sample_index+N);
@@ -463,8 +480,29 @@ class BCFWsolve{
 				cerr << ", area4=" << (Float)mat_top/mat_bottom;
 				mat_top = mat_bottom = 0;
 					//<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj();// << ", uAcc=" << train_acc_unigram();
-				if((iter+1)%10==0)
-					cerr << ", Acc=" << train_acc_joint();
+				if((iter+1)%10==0){
+					if (heldout_prob == NULL){
+						overall_time += omp_get_wtime();
+						cerr << ", train Acc=" << train_acc_joint();
+						overall_time -= omp_get_wtime();
+					} else {
+						overall_time += omp_get_wtime();
+						Float heldout_test_acc = heldout_acc_joint();	
+						cerr << ", heldout Acc=" << heldout_test_acc;
+						overall_time -= omp_get_wtime();
+						if (heldout_test_acc > max_heldout_test_acc){
+							max_heldout_test_acc = heldout_test_acc;
+							terminate_counting = 0;
+						} else {
+							cerr << " (" << (++terminate_counting) << "/" << (early_terminate) << ")";
+							if (terminate_counting == early_terminate){
+								//TODO should write best acc model
+								cerr << endl;
+								break;	
+							}
+						}
+					}
+				}
 				cerr << endl;
 			}
 			
@@ -978,6 +1016,7 @@ class BCFWsolve{
 
 			Int hit=0;
 			Int* pred = new Int[K];
+			
 			for(Int n=0;n<Ns;n++){
 				Instance* ins = data->at(n);
 				model->LPpredict(ins, pred);
@@ -988,6 +1027,33 @@ class BCFWsolve{
 				}
 				
 				if( n%10 ==0 )
+					cerr << "." ;
+			}
+
+			delete[] pred;
+			
+			return (Float)hit/Ns/K;
+		}
+		
+		Float heldout_acc_joint(){
+			
+			vector<Instance*>* heldout_data = &(heldout_prob->data);
+			Int Ns = heldout_data->size() / 10;
+			Int hit=0;
+			Int n = 0;
+			Int* pred = new Int[K];
+
+			for (vector<Instance*>::iterator it_heldout = heldout_data->begin(); it_heldout != heldout_data->end(); it_heldout++){
+				Instance* ins = *it_heldout;	
+				model->LPpredict(ins, pred);
+				for(Int k=0;k<K;k++){
+					int yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
+					if( pred[k] == yk )
+						hit++;
+				}
+				if (n >= Ns)
+					break;
+				if( (n++)%10 == 0 )
 					cerr << "." ;
 			}
 
@@ -1056,6 +1122,10 @@ class BCFWsolve{
 		}
 
 		MultilabelProblem* prob;
+
+		//for heldout option
+		MultilabelProblem* heldout_prob;		
+		Int early_terminate;
 
 		vector<Instance*>* data;
 		Float C;

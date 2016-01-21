@@ -260,6 +260,7 @@ class Param{
 
 	public:
 	char* trainFname;
+	char* heldoutFname;
 	char* modelFname;
 	Float C;
 	MultilabelProblem* prob;
@@ -267,6 +268,8 @@ class Param{
 
 	Int solver;
 	Int max_iter;
+	Int early_terminate;
+	Int admm_step_size;
 	Float eta; //Augmented-Lagrangian parameter
 
 	Param(){
@@ -275,6 +278,9 @@ class Param{
 		max_iter = 1000;
 		eta = 10;
 		heldout_prob = NULL;
+		heldoutFname = NULL;
+		early_terminate = -1;
+		admm_step_size = 0.0;
 	}
 };
 

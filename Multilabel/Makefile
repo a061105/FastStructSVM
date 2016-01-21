@@ -17,14 +17,26 @@ clean:
 		rm -f *~ *.o train
 
 scale=train
-data_dir=/scratch/cluster/ianyen/data/
+data_dir=/scratch/cluster/ianyen/data/multilabel/
 s=1
+a=1
 
 bibtex:
 	./train -s $(s) -m 10000 $(data_dir)/multilabel/bibtex.$(scale)
 
 yeast:
-	./train -s $(s) -m 10000 $(data_dir)/multilabel/yeast_$(scale).svm
+	$(eval train_file := $(data_dir)/yeast_$(scale).svm)
+	$(eval test_file := $(data_dir)/yeast_test.svm)
+	./train -s $(s) -a $(a) -m 10000 -h $(test_file) $(train_file)
 
 rcv1_regions:
-	./train -s $(s) -m 10000 $(data_dir)/multilabel/rcv1_regions_$(scale).svm #test.5k #$(scale).svm
+	$(eval train_file := $(data_dir)/rcv1_regions_$(scale).svm)
+	$(eval test_file := $(data_dir)/rcv1_regions_test.5k)
+	./train -s $(s) -a $(a) -m 10000 -h $(test_file) $(train_file)
+
+Eur-Lex:
+	$(eval train_file := $(data_dir)/Eur-Lex.$(scale))
+	$(eval heldout_file := $(data_dir)/Eur-Lex.heldout)
+	$(eval test_file := $(data_dir)/Eur-Lex.test)
+	./train -s $(s) -a $(a) -m 10000 -h $(test_file) $(train_file)
+	
