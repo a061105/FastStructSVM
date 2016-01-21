@@ -1079,12 +1079,22 @@ class BCFWsolve{
 			
 		Float p_inf_ijk;
 		Float p_inf = 0.0;
-		/*Float* cache = new Float[K];
+		Float* cache = new Float[K];
+		Float* beta_suml = new Float[K];
+		Float* beta_sumr = new Float[K];
 		for(Int n=0;n<nSeq;n++){
 			Seq* seq = data->at(n);
 			for(Int t=0;t<seq->T-1;t++){
 				Int i2 = bi_index(n,t);
 				Int i1 = uni_index(n,t);
+				memset(beta_suml, 0.0, sizeof(Float)*K);
+				memset(beta_sumr, 0.0, sizeof(Float)*K);
+				for (vector<pair<Int, Float>>::iterator it_b = act_kk_index[i2].begin(); it_b != act_kk_index[i2].end(); it_b++){
+					Int k1k2 = it_b->first;
+					Int k1 = k1k2 / K, k2 = k1k2 % K;
+					beta_suml[k1] += it_b->second;
+					beta_sumr[k2] += it_b->second;
+				}
 				for(Int j=0;j<NUM_DIRECT;j++){
 					Float* mu_ij = mu[2*i2+j];
 					memset(cache, 0.0, sizeof(Float)*K);
@@ -1093,17 +1103,18 @@ class BCFWsolve{
 					}
 					for(Int k=0;k<K;k++){
 						if (j == 0)
-							p_inf_ijk = beta_suml[i2][k] - cache[k];
+							p_inf_ijk = beta_suml[k] - cache[k];
 						else
-							p_inf_ijk = beta_sumr[i2][k] - cache[k];
+							p_inf_ijk = beta_sumr[k] - cache[k];
 						p_inf += p_inf_ijk * p_inf_ijk;
-
 					}
 				}
 			}
 		}
 		p_inf *= eta/2.0;
-		delete[] cache;*/
+		delete[] cache;
+		delete[] beta_suml;
+		delete[] beta_sumr;
 		return uni_obj + bi_obj + p_inf;
 	}
 

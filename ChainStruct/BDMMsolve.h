@@ -19,7 +19,7 @@ class BDMMsolve{
 		C = param->C;
 		eta = param->eta;
 		max_iter = param->max_iter;
-		admm_step_size = 1.0;
+		admm_step_size = param->admm_step_size;
 		early_terminate = param->early_terminate;
 		if (early_terminate <= 0)
 			early_terminate = 3;	
