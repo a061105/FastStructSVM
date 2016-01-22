@@ -383,7 +383,7 @@ class BCFWsolve{
 					Int k1k2 = it->first;
 					Float delta_beta = beta_new[k1k2] - it->second;
 					it->second = beta_new[k1k2];
-					if (fabs(it->second) < 1e-12) {
+					if (fabs(it->second) < 1e-12 && it->first != ylyr ) {
 						num_zero++;
 						to_be_trimed = it;
 					}
@@ -515,6 +515,7 @@ class BCFWsolve{
 			cerr << ", bi_search="  << bi_search_time   << ", bi_subSolve="  << bi_subSolve_time << ", bi_maintain="  << bi_maintain_time ;
 			cerr << ", admm_maintain=" << admm_maintain_time ;
 			cerr << ", area1=" << (double)submat_top/submat_bottom << ", area23=" << (double)line_top/line_bottom << ", area4=" << (double)mat_top/mat_bottom;
+			cerr << ", dual_obj=" << dual_obj();
 			if ((iter+1) % write_model_period == 0){
 				overall_time += get_current_time();
 				Model* model = new Model(w, v, prob);
@@ -693,7 +694,7 @@ class BCFWsolve{
 			prod[it->first] = -INFI;
 		}
 		prod[yi] = -INFI;
-		Float th = -1.0;
+		Float th = -1.0/seq->T;
 		max_indices[0] = range_l;
 		for (SparseVec::iterator it = xi->begin(); it != xi->end(); it++){
 			Float xij = it->second;
@@ -881,7 +882,7 @@ class BCFWsolve{
 			Float msg_L_kl = msg_from_left[kl];
 			for (vector<Int>::iterator it_r = pos_right.begin(); it_r != pos_right.end(); it_r++){
 				int kr = *it_r;
-				Float val = v_kl[kr] + msg_L_kl + msg_from_right[kr];
+				Float val = v_kl[kr] + eta*(msg_L_kl + msg_from_right[kr]);
 				if (val > max_val && !inside[kl*K+kr]){
 					max_val = val;
 					max_k1k2 = kl*K+kr;
@@ -892,17 +893,17 @@ class BCFWsolve{
 		//check area 2: msg_to_left > 0 and msg_to_right = 0
 		for (vector<Int>::iterator it_l = pos_left.begin(); it_l != pos_left.end(); it_l++){
 			Int k1 = *it_l;
-			search_line(row_heap[k1], msg_from_left[k1], msg_from_right, max_val, max_k1k2, row_heap_size[k1], inside, col_dir);
+			search_line(row_heap[k1], msg_from_left[k1], msg_from_right, max_val, max_k1k2, row_heap_size[k1], inside, col_dir, eta);
 		}
 		
 		//check area 3: msg_to_left = 0 and msg_to_right > 0
 		for (vector<Int>::iterator it_r = pos_right.begin(); it_r != pos_right.end(); it_r++){
 			Int k2 = *it_r;
-			search_line(col_heap[k2], msg_from_right[k2], msg_from_left, max_val, max_k1k2, col_heap_size[k2], inside, row_dir);
+			search_line(col_heap[k2], msg_from_right[k2], msg_from_left, max_val, max_k1k2, col_heap_size[k2], inside, row_dir, eta);
 		}
 		
 		//check area 4: msg_to_left <= 0 and msg_to_right <= 0	
-		search_matrix(v_heap, msg_from_left, msg_from_right, max_val, max_k1k2, v_heap_size, inside, K);
+		search_matrix(v_heap, msg_from_left, msg_from_right, max_val, max_k1k2, v_heap_size, inside, K, eta);
 		
 		for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
 			inside[it->first] = false;
@@ -928,7 +929,7 @@ class BCFWsolve{
 			Float* v_k1 = v[k1];
 			for (int k2 = 0; k2 < K; k2++){
 				if (inside[k1*K+k2]) continue;
-				Float val = v_k1[k2]+msg_left_i_k1 + msg_right_i[k2];
+				Float val = v_k1[k2]+eta*(msg_left_i_k1 + msg_right_i[k2]);
 				if (val > max_val){
 					max_k1k2 = k1*K+k2;
 					max_val = val;
@@ -1044,7 +1045,7 @@ class BCFWsolve{
 		return acc;
 	}
 	
-	Float dual_obj(vector<pair<Int, Float>>*& act_k_index, vector<pair<Int, Float>>*& act_kk_index){
+	Float dual_obj(){
 		
 		Float uni_obj = 0.0;
 		for(Int j=0;j<D;j++){
@@ -1059,9 +1060,10 @@ class BCFWsolve{
 			for(Int t=0; t<seq->T; t++){
 				Int i = uni_index(n,t);
 				Int yi = seq->labels[t];
+				Int len = seq->labels.size();
 				for(vector<pair<Int, Float>>::iterator it = act_k_index[i].begin(); it != act_k_index[i].end(); it++){
 					if (it->first != yi)
-						uni_obj += it->second;
+						uni_obj += it->second / len;
 				}
 				/*for(Int k=0;k<K;k++)
 					if( k != yi ){

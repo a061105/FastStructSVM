@@ -301,7 +301,7 @@ long long mat_bottom = 0, mat_top = 0;
 // visit k2 in decreasing order of v ( by search top-down the heap )
 // stopping condition 1: msg_R[k2] >= 0.0. (Since v is decreasing and msg_R cant be larger in this area, the gradients in this area are upper bounded by msg_R[k2]+v[k1][k2] + msg_L[k1])
 // stopping condition 2: v[k1k2] + msg_L[k1] <= max_val. (Since msg_R[k2] is bounded by 0)
-inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max_val, Int& max_k1k2, Int size_heap, bool* inside, Int* dir){
+inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max_val, Int& max_k1k2, Int size_heap, bool* inside, Int* dir, Float eta){
 	vector<Int> q;
 	q.push_back(0);
 	line_bottom++;
@@ -313,10 +313,10 @@ inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max
 		Int k1k2 = p.second;
 		Int k2 = dir[k1k2];
 		//cout << p.first << " " << msg_L_k1 << " " << msg_R[k2] << " " << k1k2 << ", k2=" << k2 << endl;
-		if (max_val < p.first + msg_L_k1 + msg_R[k2]){
+		if (max_val < p.first + eta*(msg_L_k1 + msg_R[k2])){
 			if (!inside[k1k2]){
 				//cout << "updating: " << p.first << " " << msg_L_k1 << " " << msg_R[k2] << " " << k1k2 << " " << dir[k1k2] << endl;
-				max_val = p.first + msg_L_k1 + msg_R[k2];
+				max_val = p.first + eta*(msg_L_k1 + msg_R[k2]);
 				max_k1k2 = k1k2;
 				if (msg_R[k2] >= 0.0){
 					continue;
@@ -343,7 +343,7 @@ inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max
 // visit k1k2 in decreasing order of v ( by search top-down the heap )
 // stopping condition 1: msg_R[k2] + msg_L[k1] >= 0.0. (Since v is decreasing and msg_L + msg_R cant be larger in this area, the gradients in this area are upper bounded by msg_R[k2]+v[k1][k2]+msg_L[k1])
 // stopping condition 2: v[k1k2] <= max_val. (Since msg_L + msg_R is bounded by 0)
-inline void search_matrix(ArrayHeap heap, Float* msg_L, Float* msg_R, Float& max_val, Int& max_k1k2, Int size_heap, bool* inside, Int K){
+inline void search_matrix(ArrayHeap heap, Float* msg_L, Float* msg_R, Float& max_val, Int& max_k1k2, Int size_heap, bool* inside, Int K, Float eta){
 	vector<Int> q;
 	q.push_back(0);
 	mat_bottom++;
@@ -356,10 +356,10 @@ inline void search_matrix(ArrayHeap heap, Float* msg_L, Float* msg_R, Float& max
 		Int k2 = k1k2 % K;
 		Int k1 = (k1k2 - k2)/K;
 		//cout << p.first << " " << msg_L[k1] << " " << msg_R[k2] << " " << k1k2 << " k1,k2=" << k1 << "," << k2 << endl;
-		if (max_val < p.first + msg_L[k1] + msg_R[k2]){
+		if (max_val < p.first + eta*(msg_L[k1] + msg_R[k2]) ){
 			if (!inside[k1k2]){
 				//cout << "updating: " << p.first << " " << msg_L[k1] << " " << msg_R[k2] << " " << k1 << " " << k2 << endl;
-				max_val = p.first + msg_L[k1] + msg_R[k2];
+				max_val = p.first + eta*(msg_L[k1] + msg_R[k2]);
 				max_k1k2 = k1k2;
 				if (msg_L[k1] + msg_R[k2] >= 0.0){
 					continue;

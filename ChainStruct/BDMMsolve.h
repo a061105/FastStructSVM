@@ -231,11 +231,12 @@ class BDMMsolve{
 							//maintain messages(mu) = (E*beta-alpha+\frac{1}{eta}mu)
 							//msg_ij[k] += mu_ij[k] - mu_ijk;
 							//compute infeasibility of consistency constraInt
-							p_inf = max( p_inf, fabs(p_inf_ijk) );
+							p_inf += fabs(p_inf_ijk);
 						}
 					}
 				}
 			}
+			p_inf /= (2*M);
 			
 			double beta_nnz=0.0;
 			for(Int i=0;i<M;i++){
@@ -258,6 +259,7 @@ class BDMMsolve{
 			alpha_nnz/=N;
 			
 			cerr << "i=" << iter << ", infea=" << p_inf << ", nnz_a=" << alpha_nnz << ", nnz_b=" << beta_nnz;
+			cerr << ", dual_obj=" << dual_obj();
 			if ((iter+1) % 1 == 0 && heldout_prob != NULL){	
 				Model* model = new Model(w, v, prob);
 				Float heldout_test_acc = model->calcAcc_Viterbi(heldout_prob);
@@ -669,7 +671,7 @@ class BDMMsolve{
 				Int yi = seq->labels[t];
 				for(Int k=0;k<K;k++)
 					if( k != yi ){
-						uni_obj += alpha[i][k];
+						uni_obj += alpha[i][k]/seq->T;
 					}
 			}
 		}
@@ -681,7 +683,7 @@ class BDMMsolve{
 		}
 		bi_obj/=2.0;
 			
-		/*Float p_inf_ijk;
+		Float p_inf_ijk;
 		Float* marg_ij = new Float[K];
 		Float p_inf = 0.0;
 		for(Int n=0;n<nSeq;n++){
@@ -703,8 +705,10 @@ class BDMMsolve{
 		}
 		p_inf *= eta/2.0;
 		delete[] marg_ij;
-		*/
-		return uni_obj + bi_obj;// + p_inf;
+
+		cerr << ", uni_obj=" << uni_obj << ", bi_obj=" << bi_obj << ", p_inf=" << p_inf;
+	
+		return uni_obj + bi_obj + p_inf;
 	}
 
 
