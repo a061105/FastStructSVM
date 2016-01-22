@@ -102,7 +102,7 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 		Instance* ins = data->at(i);
 		Label* label = labels->at(i);
 
-		param->oracleFunc(param, model, ins, NULL, i, ystar);
+		param->oracleFunc(param, model, instance, NULL, i, ystar);
 		param->featuremapFunc(param, ins, label,   phi_i);
 		param->featuremapFunc(param, ins, ystar,   phi_star);
 		

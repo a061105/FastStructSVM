@@ -89,7 +89,6 @@ Model* solverBCFW(Param* param, Option* options){
 			phi(param, ins, ystar_i,   phi_star);
 			sv_add( scalar, phi_i, -scalar, phi_star, psi_i);
 			
-
 			//compute line-search step
 			double loss_s = chain_loss( param, label, ystar_i)/(n_train*label->size());
 			//gamma = (double)(2.0*n_train)/(k+2.0*n_train);
@@ -128,13 +127,13 @@ Model* solverBCFW(Param* param, Option* options){
 				double testPred_time = -omp_get_wtime();
 				double test_error = average_loss( param, n_train, n_train + n_test, param->data, param->labels, maxOracle, model_debug);
 				testPred_time += omp_get_wtime();
-
-				//write model and test predictions
-				//writeModel(param->modelFname, model_debug);
-
+				
+				double d_obj = dual_obj(param, model_debug->w, loss_term);
+				double p_obj = primal_obj(param, 0, n_train, model_debug);
+				
 				minus_time += omp_get_wtime();
 				double end = omp_get_wtime();
-				cerr << endl << "#pass=" << p << "-" << (k%n_train) << ", test_acc=" << (1-test_error) << ", time=" << (end-start-minus_time) << ", testPredTime=" << testPred_time  << ", d-obj=" << dual_obj(param, model->w, loss_term) << endl;
+				cerr << endl << "#pass=" << p << "-" << (k%n_train) << ", test_acc=" << (1-test_error) << ", time=" << (end-start-minus_time) << ", testPredTime=" << testPred_time  << ", d-obj=" << d_obj << ", p-obj=" << p_obj << endl;
 			}
 			k++;
 		}
@@ -148,5 +147,10 @@ Model* solverBCFW(Param* param, Option* options){
 	delete[] w_Avg;	
         delete[] w_arr;
 	delete[] model_debug;
+	delete ystar_i;
+	delete phi_i;
+	delete phi_star;
+	delete psi_i;
+	
 	return model;
 }
