@@ -198,8 +198,8 @@ Int argmax( Float* arr, Int size ){
 }
 
 inline double get_current_time(){
-	return (double)clock()/CLOCKS_PER_SEC;
-	//return omp_get_wtime();
+	//return (double)clock()/CLOCKS_PER_SEC;
+	return omp_get_wtime();
 }
 
 //shift up, maintain reverse index
@@ -326,7 +326,7 @@ inline void search_line(ArrayHeap heap, Float msg_L_k1, Float* msg_R, Float& max
 			if (msg_R[k2] >= 0.0)
 				continue;
 		}
-		if (p.first + msg_L_k1 <= max_val){
+		if (p.first + eta*msg_L_k1 <= max_val){
 			continue;
 		}
 		if (index*2+1 < size_heap){

@@ -66,6 +66,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 				  break;
 			case 'a': param->admm_step_size = atof(argv[i]);
 				  break;
+			case 't': param->eta = atof(argv[i]);
+				  break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;
 				  exit(0);

@@ -267,7 +267,9 @@ class BCFWsolve{
 			line_top = 0; line_bottom = 0;
 			mat_top = 0;  mat_bottom = 0;
 			submat_top = 0; submat_bottom = 0;
+			uni_maintain_time -= get_current_time();
 			random_shuffle(uni_ind, uni_ind+N);
+			uni_maintain_time += get_current_time();
 			//update unigram dual variables
 			for(Int r=0;r<N;r++){
 
@@ -288,7 +290,7 @@ class BCFWsolve{
 			
 				//brute force search
 				uni_search_time -= get_current_time();
-				uni_search(i, n, t, act_k_index[i]);
+				uni_search(i, n, t, il, ir, act_k_index[i]);
 				uni_search_time += get_current_time();
 				
 				
@@ -328,7 +330,7 @@ class BCFWsolve{
 						//assert(fabs(msg_left_ir[k]  - mu[ir*2][k]   - beta_suml[ir][k] + alpha_new[k]) < 1e-3);
 					}
 					it->second = alpha_new[k];
-					has_zero |= (fabs(alpha_new[k])<1e-12);
+					has_zero |= (fabs(alpha_new[k])<=1e-12 && k != yi);
 				}
 					
 				if (has_zero){
@@ -682,7 +684,7 @@ class BCFWsolve{
 
 	}
 
-	void uni_search(Int i, Int n, Int t, vector<pair<Int, Float>>& act_k_index){
+	void uni_search(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_k_index){
 		Int rand_interval = rand() % split_up_rate;
 		Int range_l = interval_start[rand_interval], range_r = interval_end[rand_interval];
 
@@ -690,12 +692,25 @@ class BCFWsolve{
 		Int yi = seq->labels[t];
 		memset(prod, 0.0, sizeof(Float)*K);
 		SparseVec* xi = seq->features[t];
-		for (vector<pair<Int, Float>>::iterator it = act_k_index.begin(); it < act_k_index.end(); it++){
+		
+		Float* msg_to_left = zero_msg;
+		Float* msg_to_right = zero_msg;
+		if (ir != -1)
+			msg_to_right = msg_left[ir];
+		if (il != -1)
+			msg_to_left = msg_right[il];
+		for (vector<pair<Int, Float>>::iterator it = act_k_index.begin(); it != act_k_index.end(); it++){
 			prod[it->first] = -INFI;
 		}
-		prod[yi] = -INFI;
-		Float th = -1.0/seq->T;
 		max_indices[0] = range_l;
+		for (Int k = range_l; k < range_r; k++){
+			prod[k] -= eta*(msg_to_right[k] + msg_to_left[k]);
+			if (prod[k] > prod[max_indices[0]]){
+				max_indices[0] = k;
+			}
+		}
+		//prod[yi] = -INFI;
+		Float th = -1.0/seq->T;
 		for (SparseVec::iterator it = xi->begin(); it != xi->end(); it++){
 			Float xij = it->second;
 			Int j = it->first;
