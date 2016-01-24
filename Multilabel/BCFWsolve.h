@@ -390,9 +390,9 @@ class BCFWsolve{
 						}
 					}
 					
-					for (PairVec::iterator it_a = act_alpha[n].begin(); it_a != act_alpha[n].end(); it_a++){
+					/*for (PairVec::iterator it_a = act_alpha[n].begin(); it_a != act_alpha[n].end(); it_a++){
 						alpha_n[it_a->first] = it_a->second;
-					}			
+					}*/			
 
 					//update and shrink beta
 					vector<pair<Int, Float*>> tmp_vec;
@@ -406,35 +406,35 @@ class BCFWsolve{
 						if (fabs(beta_nij[3]) > 1e-12 || (is_ever_active[n][i] && is_ever_active[n][j]) ){
 							tmp_vec.push_back(make_pair(offset, beta_nij));
 						} else {
-							/*Float alpha_ni = alpha_n[i];
-							Float alpha_nj = alpha_n[j];
-							Int offset = K*i + j;
-							Float b10 = alpha_ni - mu[n][offset][F_LEFT];
-							Float b01 = alpha_nj - mu[n][offset][F_RIGHT];
-							if (is_pos_label[n][i]){
-								b10 -= C;
-							}
-							if (is_pos_label[n][j]){
-								b01 -= C;
-							}
-							//solve problem:
-							//   min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
-							//   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
-							proj(b10, b01);
-							if (is_pos_label[n][i]){
-								b10 += C;
-							}
-							if (is_pos_label[n][j]){
-								b01 += C;
-							}
-							assert(fabs(b10 - beta_nij[2]) < 1e-2 && fabs(b01 - beta_nij[1]) < 1e-2);*/
+							//Float alpha_ni = alpha_n[i];
+							//Float alpha_nj = alpha_n[j];
+							//Int offset = K*i + j;
+							//Float b10 = alpha_ni - mu[n][offset][F_LEFT];
+							//Float b01 = alpha_nj - mu[n][offset][F_RIGHT];
+							//if (is_pos_label[n][i]){
+							//	b10 -= C;
+							//}
+							//if (is_pos_label[n][j]){
+							//	b01 -= C;
+							//}
+							////solve problem:
+							////   min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
+							////   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
+							//proj(b10, b01);
+							//if (is_pos_label[n][i]){
+							//	b10 += C;
+							//}
+							//if (is_pos_label[n][j]){
+							//	b01 += C;
+							//}
+							//assert(fabs(b10 - beta_nij[2]) < 1e-2 && fabs(b01 - beta_nij[1]) < 1e-2);
 							delete[] beta_nij;
 						}
 					}
 					
-					for (PairVec::iterator it_a = act_alpha[n].begin(); it_a != act_alpha[n].end(); it_a++){
-						alpha_n[it_a->first] = it_a->second;
-					}			
+					/*for (PairVec::iterator it_a = act_alpha[n].begin(); it_a != act_alpha[n].end(); it_a++){
+						alpha_n[it_a->first] = 0.0;
+					}*/			
 					//issue: after deleting beta_nij, we lose beta_nij[1] and beta_nij[2], will the recovered values be the same of beta_nij[1] and beta_nij[2]?
 					act_beta_n = tmp_vec;
 					beta_nnz += act_beta_n.size();
