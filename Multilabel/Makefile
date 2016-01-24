@@ -16,18 +16,20 @@ blas/blas.a: blas/*.c blas/*.h
 clean:
 		rm -f *~ *.o train
 
-scale=train
+scale=subtrain
 data_dir=/scratch/cluster/ianyen/data/multilabel/
 s=1
 a=1
+m=10000
+e=10
 
 bibtex:
 	./train -s $(s) -m 10000 $(data_dir)/multilabel/bibtex.$(scale)
 
 yeast:
 	$(eval train_file := $(data_dir)/yeast_$(scale).svm)
-	$(eval test_file := $(data_dir)/yeast_test.svm)
-	./train -s $(s) -a $(a) -m 10000 -h $(test_file) $(train_file)
+	$(eval test_file := $(data_dir)/yeast_subtrain.svm)
+	./train -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 rcv1_regions:
 	$(eval train_file := $(data_dir)/rcv1_regions_$(scale).svm)

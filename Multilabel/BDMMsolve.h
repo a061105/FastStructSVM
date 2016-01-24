@@ -18,7 +18,7 @@ class BDMMsolve{
 			C = param->C;
 			eta = param->eta;
 			max_iter = param->max_iter;
-			admm_step_size = 0.0;
+			admm_step_size = param->admm_step_size;
 
 			//allocate dual variables
 			alpha = new Float*[N];
@@ -230,8 +230,8 @@ class BDMMsolve{
 				alpha_nnz/=N;
 				cerr << "i=" << iter << ", a_nnz=" << alpha_nnz << ", b_nnz=" << beta_nnz 
 					<< ", infea=" << p_inf <<  ", d_obj=" << dual_obj() << ", uAcc=" << train_acc_unigram() << endl;
-				if(iter%10==9)
-					cerr << ", Acc=" << train_acc_joint() << endl;
+				//if(iter%10==9)
+				//	cerr << ", Acc=" << train_acc_joint() << endl;
 			}
 			
 
@@ -474,7 +474,7 @@ class BDMMsolve{
 			
 			Float pinf_nij;
 			Float p_inf = 0.0;
-			for(Int n=0;n<N;n++){
+			/*for(Int n=0;n<N;n++){
 				Instance* ins = data->at(n);
 				Float** beta_n = beta[n];
 				Float* alpha_n = alpha[n];
@@ -489,7 +489,7 @@ class BDMMsolve{
 						p_inf += pinf_nij*pinf_nij;
 					}
 				}
-			}
+			}*/
 			p_inf *= eta/2.0;
 			
 			return u_obj + bi_obj + p_inf;

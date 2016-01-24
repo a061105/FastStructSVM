@@ -66,8 +66,8 @@ class MultilabelProblem{
 					}else{
 						ins->labels.push_back(it->second);
 					}
-					st++;
 				}
+				st++;
 			}
 
 			for(Int i=st;i<tokens.size();i++){
