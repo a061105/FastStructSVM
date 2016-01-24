@@ -198,15 +198,15 @@ class BDMMsolve{
 							//left
 							p_inf_nij = beta_n[Ki+j][2]+beta_n[Ki+j][3]-alpha_n[i];
 							mu_ij[F_LEFT] += admm_step_size*p_inf_nij;
-							p_inf += fabs(p_inf_nij);
+							p_inf += p_inf_nij * p_inf_nij;
 							//right
 							p_inf_nij = beta_n[Ki+j][1]+beta_n[Ki+j][3]-alpha_n[j];
 							mu_ij[F_RIGHT] += admm_step_size*p_inf_nij;
-							p_inf += fabs(p_inf_nij);
+							p_inf += p_inf_nij * p_inf_nij;
 						}
 					}
 				}
-				p_inf /= (N);
+				p_inf *= (eta/2);
 
 				double beta_nnz=0.0;
 				for(Int n=0;n<N;n++){
@@ -474,7 +474,7 @@ class BDMMsolve{
 			
 			Float pinf_nij;
 			Float p_inf = 0.0;
-			/*for(Int n=0;n<N;n++){
+			for(Int n=0;n<N;n++){
 				Instance* ins = data->at(n);
 				Float** beta_n = beta[n];
 				Float* alpha_n = alpha[n];
@@ -489,7 +489,7 @@ class BDMMsolve{
 						p_inf += pinf_nij*pinf_nij;
 					}
 				}
-			}*/
+			}
 			p_inf *= eta/2.0;
 			
 			return u_obj + bi_obj + p_inf;
