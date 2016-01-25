@@ -35,7 +35,7 @@ yeast:
 rcv1_regions:
 	$(eval train_file := $(data_dir)/rcv1_regions_$(scale).svm)
 	$(eval test_file := $(data_dir)/rcv1_regions_test.5k)
-	./train -s $(s) -a $(a) -m 10000 -h $(test_file) $(train_file)
+	./train -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 Eur-Lex:
 	$(eval train_file := $(data_dir)/Eur-Lex.$(scale))
