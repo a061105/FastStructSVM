@@ -50,17 +50,7 @@ class BCFWsolve{
 			}
 
 			ever_act_alpha = new vector<Int>[N];
-			/*beta = new Float**[N];
-			for(Int n=0;n<N;n++){
-				beta[n] = new Float*[K*K];
-				for(Int kk=0;kk<K*K;kk++)
-					beta[n][kk] = NULL;
-				for(Int i=0;i<K;i++)
-					for(Int j=i+1;j<K;j++){
-						beta[n][i*K+j] = new Float[4];
-						memset( beta[n][i*K+j], 0.0, sizeof(Float)*4 );
-					}
-			}*/
+			
 			//allocate primal variables
 			w = new Float*[D];
 			for(Int j=0;j<D;j++){
@@ -77,7 +67,6 @@ class BCFWsolve{
 
 			//allocating Lagrangian Multipliers for consistency constraInts
 			mu = new Float**[N]; //2 because of bigram
-			//messages = new Float*[2*M];
 			for(Int n=0;n<N;n++){
 				mu[n] = new Float*[K*K];
 				for(Int i=0;i<K;i++){
@@ -108,7 +97,6 @@ class BCFWsolve{
 			for (Int i = 0; i < N; i++){
 				is_pos_label[i] = new bool[K];
 				Instance* ins = data->at(i);
-				//sort(ins->labels.begin(), ins->labels.end(), less<Int>());
 				memset(is_pos_label[i], false, sizeof(bool)*K);
 				for (Labels::iterator it_label = ins->labels.begin(); it_label != ins->labels.end(); it_label++){
 					Int k = *it_label;
@@ -158,9 +146,6 @@ class BCFWsolve{
 			}
 			delete[] act_beta;
 
-			//for(Int i=0;i<M;i++)
-			//	delete[] beta[i];
-			//delete[] beta;
 			//primal variables
 			for(Int j=0;j<D;j++)
 				delete[] w[j];
@@ -223,6 +208,7 @@ class BCFWsolve{
 			delete[] inside_a;
 		}
 
+		/*
 		//for debug
 		void full_size_beta(){
 			bool* inside_b = new bool[K*K];	
@@ -268,7 +254,8 @@ class BCFWsolve{
 			}
 			delete[] inside_b;
 		}
-		
+	
+		//for debug	
 		void fill_act(PairVec& act){
 			bool* inside_a = new bool[K];
 			memset(inside_a, false, sizeof(bool)*K);
@@ -280,6 +267,8 @@ class BCFWsolve{
 				act.push_back(make_pair(k, 0.0));
 			}
 		}
+
+		//for debug
 		void fill_act(vector<Int>& act){
 			bool* inside_a = new bool[K];
 			memset(inside_a, false, sizeof(bool)*K);
@@ -291,6 +280,7 @@ class BCFWsolve{
 				act.push_back(k);
 			}
 		}
+		*/
 
 		Model* solve(){
 
@@ -312,11 +302,6 @@ class BCFWsolve{
 					ever_act_alpha[n].push_back(*it_label);
 					is_ever_active[n][*it_label] = true;
 				}
-				//fill_act(ever_act_alpha[n]);
-				//for (Int k = 0; k < K; k++)
-				//	is_ever_active[n][k] = true;
-				//sort(ever_act_alpha[n].begin(), ever_act_alpha[n].end(), less<Int>());
-				//sort(act_alpha[n].begin(), act_alpha[n].end(), less<pair<Int, Float>>());
 			}
 		
 			for (Int n = 0; n < N; n++){
@@ -327,14 +312,12 @@ class BCFWsolve{
 						if (i > j){
 							Int temp = i; i = j; j = temp;
 						}
-						assert(i != j);
 						Float* temp_float = new Float[4];
 						memset(temp_float, 0.0, sizeof(Float)*4);
 						act_beta[n].push_back(make_pair(K*i+j, temp_float));
 					}
 				}
 			}
-			//flush_ever_act();
 				
 			Float p_inf;
 			Float alpha_nnz = 0.0;
@@ -342,8 +325,6 @@ class BCFWsolve{
 			Float ever_alpha_nnz = 0.0;
 			Float max_heldout_test_acc = 0.0;
 			Int terminate_counting = 0;
-			//full_size_alpha();
-			//full_size_beta();
 			for(Int iter=0;iter<max_iter;iter++){
 
 				random_shuffle(sample_index, sample_index+N);
@@ -352,21 +333,15 @@ class BCFWsolve{
 				double admm_maintain_time = 0.0;
 				//update unigram dual variables
 				alpha_nnz = 0.0;
-				ever_alpha_nnz = 0.0;
-				//if (iter == 1000)
-				//	full_size_alpha();
-				//if (iter == 500)
-				//	full_size_beta();
-				
+				ever_alpha_nnz = 0.0;	
 				for(Int r=0;r<N;r++){
 
 					Int n = sample_index[r];
-	
-					//cout << "uni search:enter" << endl;
+
+					//search for active variables	
 					uni_search_time -= omp_get_wtime();
 					uni_search(n, act_alpha[n]);
 					uni_search_time += omp_get_wtime();
-					//cout << "uni search:exit" << endl;
 
 					//subproblem solving
 					uni_subSolve_time -= omp_get_wtime();
@@ -399,8 +374,6 @@ class BCFWsolve{
 							if (!is_ever_active_n[k]){
 								is_ever_active_n[k] = true;
 								ever_act_alpha[n].push_back(k);
-								//flush_ever_act();
-								//sort(ever_act_alpha[n].begin(), ever_act_alpha[n].end(), less<Int>());
 							}
 						}
 					}
@@ -413,18 +386,16 @@ class BCFWsolve{
 				alpha_nnz /= N;
 				ever_alpha_nnz /= N;
 			
-				//cout << "alpha_done" << endl;	
 				//update bigram dual variables	
 				random_shuffle(sample_index, sample_index+N);
 				beta_nnz = 0.0;
 				for(Int r=0;r<N;r++){
 					Int n = sample_index[r];
-
-					//cout << "bi search:enter" << endl;
+					
+					//search for active variables
 					bi_search_time -= omp_get_wtime();
 					bi_search(n, act_beta[n]);
 					bi_search_time += omp_get_wtime();
-					//cout << "bi search:exit" << endl;
 				
 					//subproblem solving
 					bi_subSolve_time -= omp_get_wtime();
@@ -452,11 +423,6 @@ class BCFWsolve{
 						}
 					}
 
-					/*memset(alpha_n, 0.0, sizeof(Float)*K);
-					for (PairVec::iterator it_a = act_alpha[n].begin(); it_a != act_alpha[n].end(); it_a++){
-						alpha_n[it_a->first] = it_a->second;
-					}*/
-					
 					//update and shrink beta
 					vector<pair<Int, Float*>> tmp_vec;
 					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
@@ -466,109 +432,21 @@ class BCFWsolve{
 						for (Int d = 0; d < 4; d++){
 							beta_nij[d] = beta_new[offset][d];
 						}
-						//if (fabs(beta_nij[3]) > 1e-12 || (is_ever_active[n][i] && is_ever_active[n][j]) ){
-						//	tmp_vec.push_back(make_pair(offset, beta_nij));
-						//} else {
-							/*Float alpha_ni = alpha_n[i];
-							Float alpha_nj = alpha_n[j];
-							Int offset = K*i + j;
-							Float b10 = alpha_ni - mu[n][offset][F_LEFT];
-							Float b01 = alpha_nj - mu[n][offset][F_RIGHT];
-							if (is_pos_label[n][i]){
-								b10 -= C;
-							}
-							if (is_pos_label[n][j]){
-								b01 -= C;
-							}
-							//solve problem:
-							//   min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
-							//   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
-
-							proj(b10, b01);
-							if (is_pos_label[n][i]){
-								b10 += C;
-							}
-							if (is_pos_label[n][j]){
-								b01 += C;
-							}
-							
-							assert(i < j);
-							for (Int tt = 0; tt < 1000; tt++){
-								Float Qii = (1.0+eta*2);
-								Float* mu_nij = mu[n][offset];
-								//Int offset = (Ki+j)*4;
-								//compute gradient
-								
-								for(int d=0;d<4;d++)
-									//grad[offset+d] = - Qii*beta_n[Ki+j][d];
-									grad[d] = - Qii*beta_nij[d];
-								grad[3] += v[i][j];
-								assert(alpha_n != NULL);
-								assert(mu_nij != NULL);
-								assert(beta_nij != NULL);
-								//Float beta_nij_left1_sum = beta_n[Ki+j][2]+beta_n[Ki+j][3];
-								Float msg_L = beta_nij[2] + beta_nij[3] - alpha_n[i] + mu_nij[F_LEFT];
-								grad[2] += eta*( msg_L ); //2:10
-								grad[3] += eta*( msg_L ); //3:11
-
-								Float msg_R = beta_nij[1] + beta_nij[3] - alpha_n[j] + mu_nij[F_RIGHT];
-								grad[1] += eta*( msg_R ); //1:01
-								grad[3] += eta*( msg_R ); //1:11
-
-								grad[3] = 0;
-								Float* Dk = new Float[4];
-								//compute Dk
-								int d_nij = 2*is_pos_label[n][i] + is_pos_label[n][j];
-								for(Int d=0;d<4;d++){
-									if( d != d_nij )
-										Dk[d] = grad[d];
-									else
-										Dk[d] = grad[d] + Qii*C;
-								}
-								assert(fabs(Dk[3]) < 1e-12);
-								//Dk[3] = 0;
-
-								//sort according to D_k
-								sort( Dk, Dk+4,  greater<Float>() );
-								//compute b by traversing D_k in descending order
-								Float b = Dk[0] - Qii*C;
-								Int r;
-								for( r=1; r<4 && b<r*Dk[r]; r++)
-									b += Dk[r];
-								b = b / r;
-
-								//record beta new values
-								for (int d=0;d<4;d++)
-									beta_nij[d] = min( (Float)((d!=d_nij)?0.0:C), (b-grad[d])/Qii );
-								cout << "theirs: b01=" << beta_nij[1] << ", b10=" << beta_nij[2] << ", b11=" << beta_nij[3] << endl;
-							}
-							Float left = alpha_n[i] - mu[n][offset][F_LEFT];
-							Float right = alpha_n[j] - mu[n][offset][F_RIGHT];
-							cout << is_pos_label[n][i] << " " << is_pos_label[n][j] << endl;
-							cout << "left=" << left << ", right=" << right << " vij=" << v[i][j] << endl;
-							cout << "mine: b01=" << b01 << ", b10=" << b10 << " obj=" << ((b10-left)*(b10-left) + (b01 - right)*(b01 - right))<< endl;
-							cout << "theirs: b01=" << beta_new[offset][1] << ", b10=" << beta_new[offset][2] << ", b11=" << beta_new[offset][3] 
-							<< ", obj=" <<  ((beta_new[offset][2]-left)*(beta_new[offset][2]-left) + (beta_new[offset][1] - right)*(beta_new[offset][1] - right))<< endl;
-							//cout << "should be: b01=" << beta_nij[1] << ", b10=" << beta_nij[2] << endl;
-							assert(fabs(b10 - beta_nij[2]) < 1e-6 && fabs(b01 - beta_nij[1]) < 1e-6);
-							*/
-							//delete[] beta_nij;
-						//}
+						if (fabs(beta_nij[3]) > 1e-12 || (is_ever_active[n][i] && is_ever_active[n][j]) ){
+							tmp_vec.push_back(make_pair(offset, beta_nij));
+						} else {
+							delete[] beta_nij;
+						}
 					}
 				
-					/*for (PairVec::iterator it_a = act_alpha[n].begin(); it_a != act_alpha[n].end(); it_a++){
-						alpha_n[it_a->first] = 0;
-					}*/
 						
-					//issue: after deleting beta_nij, we lose beta_nij[1] and beta_nij[2], will the recovered values be the same of beta_nij[1] and beta_nij[2]?
-					//act_beta_n = tmp_vec;
+					act_beta_n = tmp_vec;
 					beta_nnz += act_beta_n.size();
 					bi_maintain_time += omp_get_wtime();
 				}
 				beta_nnz /= N;
 				
 				//ADMM update (enforcing consistency)
-				//cout << "here?" << endl;	
 				admm_maintain_time -= omp_get_wtime();
 				p_inf = 0.0;
 				for(Int n=0;n<N;n++){
@@ -576,7 +454,7 @@ class BCFWsolve{
 					bool* is_pos_label_n = is_pos_label[n];
 					vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
 					Float** mu_n = mu[n];
-					memset(alpha_n, 0.0, sizeof(Float)*K);
+					//memset(alpha_n, 0.0, sizeof(Float)*K);
 					for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
 						alpha_n[it_alpha->first] = it_alpha->second;
 					}
@@ -586,7 +464,7 @@ class BCFWsolve{
 						inside[offset] = true;
 						beta_n[offset] = it_b->second;
 					}	
-					// adds act_beta
+					
 					for(vector<Int>::iterator it_ever = ever_act_alpha_n->begin(); it_ever != ever_act_alpha_n->end(); it_ever++){
 						Int ii = *it_ever;
 						for(vector<Int>::iterator it_ever2 = it_ever+1; it_ever2 != ever_act_alpha_n->end(); it_ever2++){
@@ -597,36 +475,13 @@ class BCFWsolve{
 							}
 							Int offset = K*i+j;
 							if (inside[offset]){
-								//cout << "uni subsolve: before mu, offset=" << offset << endl;
 								Float delta_mu_l = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i];
 								Float delta_mu_r = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j];
 								p_inf += delta_mu_l * delta_mu_l;
 								p_inf += delta_mu_r * delta_mu_r;
 								mu_n[offset][F_LEFT] += admm_step_size*(delta_mu_l);
 								mu_n[offset][F_RIGHT] += admm_step_size*(delta_mu_r);
-							} else {
-								
-								//cout << "bi search: before mu, offset=" << offset << ", i=" << i << ", j=" << j << endl;
-								/*Float tmp_L = alpha_n[i] - mu_n[offset][F_LEFT];
-								Float tmp_R = alpha_n[j] - mu_n[offset][F_RIGHT];
-								Float beta_nij01 = 0.0, beta_nij10 = 0.0;
-								//cout << "bi search: after mu" << endl;
-
-								//shouldn't have both positive here
-								if (is_pos_label_n[i]){
-									tmp_L -= C;
-									beta_nij10 = C;
-								}
-								if (is_pos_label_n[j]){
-									tmp_R -= C;
-									beta_nij01 = C;
-								}
-								//solve problem: 
-								//   min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
-								//   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
-								proj(tmp_L, tmp_R);
-								beta_nij10 += tmp_L;
-								beta_nij01 += tmp_R;*/
+							} else {	
 								Float beta_nij01, beta_nij10;
 								recover_beta(n, i, j, alpha_n, beta_nij10, beta_nij01);
 								Float delta_mu_l = beta_nij10 - alpha_n[i];
@@ -643,12 +498,8 @@ class BCFWsolve{
 						Int offset = it_beta->first;
 						Int i = offset / K, j = offset % K;
 						if (is_ever_active_n[i] && is_ever_active_n[j]){
-							beta_n[offset] = NULL;
-							inside[offset] = false;
 							continue;
 						}
-						
-						//assert(!is_ever_active_n[i] && !is_ever_active_n[j]);
 						Float* beta_nij = it_beta->second;
 						Float delta_mu_l = beta_nij[2] + beta_nij[3] - alpha_n[i];
 						Float delta_mu_r = beta_nij[1] + beta_nij[3] - alpha_n[j];
@@ -656,6 +507,10 @@ class BCFWsolve{
 						p_inf += delta_mu_r * delta_mu_r;
 						mu_n[offset][F_LEFT] += (delta_mu_l) * admm_step_size;
 						mu_n[offset][F_RIGHT] += (delta_mu_r) * admm_step_size;
+					}
+
+					for (vector<pair<Int, Float*>>::iterator it_beta = act_beta[n].begin(); it_beta != act_beta[n].end(); it_beta++){
+						Int offset = it_beta->first;
 						beta_n[offset] = NULL;
 						inside[offset] = false;
 					}
@@ -663,6 +518,7 @@ class BCFWsolve{
 					for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
 						alpha_n[it_alpha->first] = 0.0;
 					}
+					
 				}
 				p_inf *= (eta/2);
 				admm_maintain_time += omp_get_wtime();
@@ -712,36 +568,28 @@ class BCFWsolve{
 
 	private:
 
-		void uni_subSolve(Int n, Float* alpha_new){ //solve i-th unigram factor
+		void uni_subSolve(Int n, Float* alpha_new){ //solve n-th unigram factor
 
-			//cout << "uni_subSolve: enter" << endl;
 			Instance* ins = data->at(n);
 			Float Qii = Q_diag[n];
 			PairVec* act_alpha_n = &(act_alpha[n]);
 			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
-			//cout << "uni_subSolve: enter1" << endl;
 			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
 			memset(alpha_n, 0.0, sizeof(Float)*K);
 			memset(grad, 0.0, sizeof(Float)*K);
 			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
 				alpha_n[it_alpha->first] = it_alpha->second;
 			}
-			//cout << "uni_subSolve: enter2" << endl;
-			/*for (Int i = 0; i < K; i++)
-				for (Int j = i+1; j < K; j++){
-					beta_n[K*i+j] = new Float[4];
-					memset(beta_n[K*i+j], 0.0, sizeof(Float)*4);
-				}*/
-			//cout << "beta_n[offset] initialize" << endl;
+			
 			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n->begin(); it_beta != act_beta_n->end(); it_beta++){
 				Int offset = it_beta->first;
 				beta_n[offset] = it_beta->second;
 				inside[offset] = true;
 			}
-			//cout << "beta_n[offset] exit" << endl;
 			Float** mu_n = mu[n];
 			
 			bool* is_pos_label_n = is_pos_label[n];
+			bool* is_ever_active_n = is_ever_active[n];	
 			
 			for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
 				Float* wj = w[it->first];
@@ -759,12 +607,6 @@ class BCFWsolve{
 					grad[k] += -1.0;
 			}
 			
-			//messages
-			/*for(Int i=0;i<K;i++){
-				Int Ki = K*i;
-				for(Int j=i+1;j<K;j++){//from each bigram
-					Float* beta_nij = beta_n[Ki+j];
-			*/
 			Float msg_L, msg_R;
 			for (vector<Int>::iterator it_alpha = ever_act_alpha_n->begin(); it_alpha != ever_act_alpha_n->end(); it_alpha++){
 				Int ii = *it_alpha;
@@ -781,80 +623,30 @@ class BCFWsolve{
 					Float alpha_nj = alpha_n[j];
 					Int offset = Ki + j;
 					if (inside[offset]){
-						//cout << "uni subsolve: before mu, offset=" << offset << endl;
 						msg_L = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][F_LEFT];
 						msg_R = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][F_RIGHT];
-					} else {
-						
+					} else {	
 						Float beta_nij01, beta_nij10;
 						recover_beta(n, i, j, alpha_n, beta_nij10, beta_nij01);
 						msg_L = beta_nij10 - alpha_n[i] + mu_n[offset][F_LEFT];
 						msg_R = beta_nij01 - alpha_n[j] + mu_n[offset][F_RIGHT];
-						/*Float tmp_L = alpha_ni - mu_n[offset][F_LEFT];
-						Float tmp_R = alpha_nj - mu_n[offset][F_RIGHT];
-						if (is_pos_label_n[i]){
-							tmp_L -= C;
-						}
-						if (is_pos_label_n[j]){
-							tmp_R -= C;
-						}
-						msg_L = - tmp_L;
-						msg_R = - tmp_R;
-						//solve problem: 
-						//   min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
-						//   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
-						proj(tmp_L, tmp_R);
-						msg_L += tmp_L;
-						msg_R += tmp_R;*/
 					}
 					grad[i] -= eta * msg_L;
 					grad[j] -= eta * msg_R;
-					
-					
-					//bigram to left
-					
-					/*Float beta_nij10 = alpha_n[i] - beta_nij[3] - mu_n[Ki+j][F_LEFT];
-					if (is_pos_label[i] && !is_pos_label[j]){
-						//beta_nij10 \in [0, C]
-						beta_nij10 = min(max(beta_nij10, 0.0), (Float)C);
-					} else {
-						//beta_nij10 \in [-C, 0]
-						beta_nij10 = min(max(beta_nij10, -(Float)C), 0.0);
-					}
-					grad[i] -= eta*( beta_nij10 + beta_nij[3] - alpha_n[i] + mu_n[Ki+j][F_LEFT] );
-					
-					//bigram to right
-					
-					Float beta_nij01 = alpha_n[j] - beta_nij[3] - mu_n[Ki+j][F_RIGHT];
-					if (!is_pos_label[i] && is_pos_label[j]){
-						//beta_nij01 \in [0, C]
-						beta_nij01 = min(max(beta_nij01, 0.0), (Float)C);
-					} else {
-						//beta_nij01 \in [-C, 0]
-						beta_nij01 = min(max(beta_nij01, -(Float)C), 0.0);
-					}
-					grad[j] -= eta*( beta_nij01 + beta_nij[3] - alpha_n[j] + mu_n[Ki+j][F_RIGHT] );
-					*/
 				}
 			}
 		
-			bool* is_ever_active_n = is_ever_active[n];	
 			for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
 				Int offset = it_b->first;
 				Int i = offset / K, j = offset % K;
-				assert(i < j);
 				if (!is_ever_active_n[i] || !is_ever_active_n[j]){
-					
-					//assert(!is_ever_active_n[i] && !is_ever_active_n[j]);
-					//assert(fabs(alpha_n[i]) < 1e-12 && fabs(alpha_n[j]) < 1e-12);
 					msg_L = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][F_LEFT];
 					msg_R = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][F_RIGHT];
 					grad[i] -= eta * msg_L;
 					grad[j] -= eta * msg_R;
 				}
-				inside[offset] = false;
-				beta_n[offset] = NULL;
 			}
+			
 
 			Float* U = new Float[K];
 			Float* L = new Float[K];
@@ -873,6 +665,9 @@ class BCFWsolve{
 				alpha_new[k] = min( max( it_alpha->second - grad[k]/Qii, L[k] ), U[k] );
 			}
 
+			delete[] U;
+			delete[] L;
+
 			/*for(PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
 				Int k = it_alpha->first;
 				if (is_pos_label_n[k])
@@ -882,16 +677,19 @@ class BCFWsolve{
 			}*/
 
 	
-			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
-				Int k = it_alpha->first;
-				alpha_n[k] = 0.0;
-				grad[k] = 0.0;
+			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++)
+				alpha_n[it_alpha->first] = 0.0;
+
+			for (vector<Int>::iterator it_e = ever_act_alpha_n->begin(); it_e != ever_act_alpha_n->end(); it_e++)
+				grad[*it_e] = 0.0;
+			
+			for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
+				Int offset = it_b->first;
+				Int i = offset / K, j = offset % K;
+				inside[offset] = false;
+				beta_n[offset] = NULL;
+				grad[i] = 0.0; grad[j] = 0.0;
 			}
-
-			memset(grad, 0.0, sizeof(Float)*K);	
-
-			delete[] U;
-			delete[] L;
 		}
 
 		void uni_search(Int n, vector<pair<Int, Float>>& act_alpha_n){
@@ -932,10 +730,7 @@ class BCFWsolve{
 			//need some msg here
 			Float msg_L = 0.0, msg_R = 0.0;
 			for (Int ii = 0; ii < K; ii++){
-				//no need to check active variables
-				//if (fabs(alpha_n[ii]) > 1e-12 || is_pos_label_n[ii])
-				//	continue;
-				//if (inside_a[ii]) continue;
+				if (inside_a[ii]) continue;
 				for (vector<Int>::iterator it_e = ever_act_alpha_n->begin(); it_e != ever_act_alpha_n->end(); it_e++){
 					Int i = ii, j = *it_e;
 					if (is_ever_active_n[i] && i >= j)
@@ -945,32 +740,13 @@ class BCFWsolve{
 					}
 					Int offset = K*i + j;
 					if (inside[offset]){
-						////cout << "bi search: before mu, offset=" << offset << endl;
 						msg_L = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][F_LEFT];
 						msg_R = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][F_RIGHT];
 					} else {
-						
 						Float beta_nij01, beta_nij10;
 						recover_beta(n, i, j, alpha_n, beta_nij10, beta_nij01);
 						msg_L = beta_nij10 - alpha_n[i] + mu_n[offset][F_LEFT];
 						msg_R = beta_nij01 - alpha_n[j] + mu_n[offset][F_RIGHT];
-						
-						/*Float tmp_L = alpha_n[i] - mu_n[offset][F_LEFT];
-						Float tmp_R = alpha_n[j] - mu_n[offset][F_RIGHT];
-						if (is_pos_label_n[i]){
-							tmp_L -= C;
-						}
-						if (is_pos_label_n[j]){
-							tmp_R -= C;
-						}
-						msg_L = - tmp_L;
-						msg_R = - tmp_R;
-						//solve problem:
-						//   min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
-						//   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
-						proj(tmp_L, tmp_R);
-						msg_L += tmp_L;
-						msg_R += tmp_R;*/
 					}
 					prod[i] -= eta * msg_L;
 					prod[j] -= eta * msg_R;
@@ -1039,17 +815,14 @@ class BCFWsolve{
 					Int i = offset / K, j = offset % K;
 					assert(i < j);
 					Float* mu_nij = mu_n[offset];
-					//Int offset = (Ki+j)*4;
 					//compute gradient
 					for(int d=0;d<4;d++)
-						//grad[offset+d] = - Qii*beta_n[Ki+j][d];
 						grad[d] = - Qii*beta_nij[d];
 
 					grad[3] += v[i][j];
 					assert(alpha_n != NULL);
 					assert(mu_nij != NULL);
 					assert(beta_nij != NULL);
-					//Float beta_nij_left1_sum = beta_n[Ki+j][2]+beta_n[Ki+j][3];
 					Float msg_L = beta_nij[2]+beta_nij[3] - alpha_n[i] + mu_nij[F_LEFT];
 					grad[2] += eta*( msg_L ); //2:10
 					grad[3] += eta*( msg_L ); //3:11
@@ -1099,16 +872,6 @@ class BCFWsolve{
 				Int offset = it_beta->first;
 				inside[offset] = true;
 			}
-
-			/*for (vector<pair<Int, Float*>>& it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
-				Int offset = it_beta->first;
-				Int i = offset / K;
-				Int j = offset % K;
-				Float* beta_nij = it_beta->second;
-				grad[offset+3] = v[i][j] + beta_nij[2] + beta_nij[3]*2 + beta_nij[1];
-				grad[offset+2] = beta_nij[2] + beta_nij[3];
-				grad[offset+1] = beta_nij[1] + beta_nij[3];
-			}*/
 			
 			Instance* ins = data->at(n);
 			Labels* pos_labels = &(ins->labels);
@@ -1116,20 +879,7 @@ class BCFWsolve{
 			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
 			Float** mu_n = mu[n];
 
-			/*bool* active = new bool[K];
-			memset(active, false, sizeof(bool)*K);
-			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
-				active[it_alpha->first] = true;
-			}*/
-
-			//cout << "bi search:middle" << endl;
 			bool* is_pos_label_n = is_pos_label[n];
-
-			/*Float* msg_L = new Float[K*K];
-			Float* msg_R = new Float[K*K];
-			memset(msg_L, 0.0, sizeof(Float)*K*K);
-			memset(msg_R, 0.0, sizeof(Float)*K*K);
-			*/
 
 			memset(alpha_n, 0.0, sizeof(Float)*K);
 			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
@@ -1151,33 +901,11 @@ class BCFWsolve{
 					Int offset = Ki + j;
 					if (inside[offset])
 						continue;
-					//cout << "bi search: before mu, offset=" << offset << ", i=" << i << ", j=" << j << endl;
 					
 					Float beta_nij01, beta_nij10;
 					recover_beta(n, i, j, alpha_n, beta_nij10, beta_nij01);
 					Float msg_L = beta_nij10 - alpha_n[i] + mu_n[offset][F_LEFT];
 					Float msg_R = beta_nij01 - alpha_n[j] + mu_n[offset][F_RIGHT];
-								
-	
-					/*Float tmp_L = alpha_ni - mu_n[offset][F_LEFT];
-					Float tmp_R = alpha_nj - mu_n[offset][F_RIGHT];
-					//cout << "bi search: after mu" << endl;
-					
-					if (is_pos_label_n[i]){
-						tmp_L -= C;
-					}
-					
-					if (is_pos_label_n[j]){
-						tmp_R -= C;
-					}
-					Float msg_L = - tmp_L;
-					Float msg_R = - tmp_R;
-					//solve problem: 
-					//  min (beta^{10} - tmp_L)^2 + (beta^{01} - tmp_R)^2
-					//  s.t. beta^{10}, beta^{01} \in [-C, 0], beta^{10} + beta^{01} \in [-C, 0]
-					proj(tmp_L, tmp_R);
-					msg_L += tmp_L;
-					msg_R += tmp_R;*/
 
 					Float val = v[i][j] + eta*(msg_L + msg_R);
 					if (val > max_val){
