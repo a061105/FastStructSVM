@@ -1,0 +1,61 @@
+#include "util.h"
+#include "struct.h"
+#include "multilabel.h"
+#include "solverSSG.h"
+#include "solverBCFW.h"
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <string>
+
+int main(int argc, char** argv){
+	
+	if( argc < 1+5 ){
+		cerr << "structTrain [data] [test_data] [lambda] [modelFname] [0:SSG/1:BCFW] (max_iter)" << endl;
+		exit(0);
+	}
+
+	char* dataFname = argv[1];
+	char* testFname = argv[2];
+	double lambda = atof(argv[3]);
+	char* modelFname = argv[4];
+	Int method = atoi(argv[5]);
+	Int max_iter = -1;
+       	if( argc > 1+5 )
+		max_iter = atoi(argv[6]);
+	
+	Param* param = new Param();
+	param->featuremapFunc = multilabel_featuremap;
+	param->oracleFunc = multilabel_oracle;
+	param->loss = multilabel_loss;
+	param->readData = multilabel_readData;
+	cerr << 1 << endl;
+	param->readData(dataFname, param);
+	param->n_train = param->data->size();
+	cerr << 2 << endl;
+	param->readData(testFname, param);
+	param->n_test = param->data->size() - param->n_train;
+	
+	param->lambda = lambda/param->n_train;
+	param->modelFname = modelFname;
+	
+	cerr << "#train_samples=" << param->n_train << endl;
+	cerr << "#test_samples=" << param->n_test << endl;
+	cerr << "d=" << param->d << endl;
+	cerr << "K=" << param->num_states << endl;
+	cerr << "lambda=" << param->lambda << endl;
+	
+	Option* option = new Option();
+	if( max_iter != -1 )
+		option->num_pass = max_iter;
+	
+	Model* model;
+	if( method == 0 )
+		model = solverSSG(param, option);
+	else
+		model = solverBCFW(param, option);
+	
+	//writeModel(modelFname, model);
+
+	return 0;
+}
