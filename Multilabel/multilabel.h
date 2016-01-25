@@ -269,7 +269,7 @@ class Param{
 	Int solver;
 	Int max_iter;
 	Int early_terminate;
-	Int admm_step_size;
+	Float admm_step_size;
 	Float eta; //Augmented-Lagrangian parameter
 
 	Param(){
