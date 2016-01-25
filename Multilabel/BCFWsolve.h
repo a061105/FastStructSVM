@@ -343,7 +343,7 @@ class BCFWsolve{
 			Float max_heldout_test_acc = 0.0;
 			Int terminate_counting = 0;
 			//full_size_alpha();
-			full_size_beta();
+			//full_size_beta();
 			for(Int iter=0;iter<max_iter;iter++){
 
 				random_shuffle(sample_index, sample_index+N);
@@ -1271,7 +1271,53 @@ class BCFWsolve{
 
 		inline void recover_beta(Int n, Int i, Int j, Float* alpha_n, Float& beta_nij10, Float& beta_nij01){
 			beta_nij10 = 0.0; beta_nij01 = 0.0;
-			Int offset = K*i + j;
+			Int offset = K*i+j;
+			Float* mu_nij = mu[n][offset];
+			//compute gradient
+			Float Qii = (1.0+eta*2);
+			for(int d=0;d<4;d++)
+				grad[d] = 0.0;
+			
+			//Float beta_nij_left1_sum = beta_n[Ki+j][2]+beta_n[Ki+j][3];
+			Float msg_L = - alpha_n[i] + mu_nij[F_LEFT];
+			grad[2] += eta*( msg_L ); //2:10
+
+			Float msg_R = - alpha_n[j] + mu_nij[F_RIGHT];
+			grad[1] += eta*( msg_R ); //1:01
+
+			//compute Dk
+			Float* Dk = new Float[4];
+			int d_nij = 2*is_pos_label[n][i] + is_pos_label[n][j];
+			for(Int d=0;d<4;d++){
+				if( d != d_nij )
+					Dk[d] = grad[d];
+				else
+					Dk[d] = grad[d] + Qii*C;
+			}
+
+			//sort according to D_k
+			sort( Dk, Dk+4,  greater<Float>() );
+			//compute b by traversing D_k in descending order
+			Float b = Dk[0] - Qii*C;
+			Int r;
+			for( r=1; r<4 && b<r*Dk[r]; r++)
+				b += Dk[r];
+			b = b / r;
+
+			Float* beta_nij = new Float[4];
+			//record beta new values
+			for (int d=0;d<4;d++){
+				beta_nij[d] = min( (Float)((d!=d_nij)?0.0:C), (b-grad[d])/Qii );
+				grad[d] = 0.0;
+			}
+			beta_nij10 = beta_nij[2];
+			beta_nij01 = beta_nij[1];
+			delete[] Dk;
+			delete[] beta_nij;
+
+///////////////////
+//DIFFERENT ALGO
+			/*Int offset = K*i + j;
 			Float tmp_L = alpha_n[i] - mu[n][offset][F_LEFT];
 			Float tmp_R = alpha_n[j] - mu[n][offset][F_RIGHT];
 
@@ -1289,7 +1335,7 @@ class BCFWsolve{
 			//   s.t. beta^{01}, beta^{10} \in [-C, 0], beta^{01} + beta^{10} \in [-C, 0]
 			proj(tmp_L, tmp_R);
 			beta_nij10 += tmp_L;
-			beta_nij01 += tmp_R;	
+			beta_nij01 += tmp_R;*/	
 		}
 
 		Float train_acc_unigram(){
