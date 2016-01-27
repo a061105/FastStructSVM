@@ -33,6 +33,10 @@ class BCFWsolve{
 			max_iter = param->max_iter;
 			admm_step_size = param->admm_step_size;
 			early_terminate = param->early_terminate;
+			heldout_period = param->heldout_period;
+			if (heldout_period == -1){
+				heldout_period = 10;
+			}
 
 			if (early_terminate == -1){
 				early_terminate = 10;
@@ -230,6 +234,16 @@ class BCFWsolve{
 					}
 				}
 			}
+			/*for (Int n = 0; n < N; n++){
+				for (Int i = 0; i < K; i++){
+					for (Int j = i+1; j < K; j++){
+						Int offset = K*i+j;
+						Float* temp_float = new Float[4];
+						memset(temp_float, 0.0, sizeof(Float)*4);
+						act_beta[n].push_back(make_pair(offset, temp_float));
+					}
+				}
+			}*/
 				
 			Float p_inf;
 			Float alpha_nnz = 0.0;
@@ -284,6 +298,21 @@ class BCFWsolve{
 						if (fabs(alpha_nk)>1e-12 || is_pos_label[n][k]){
 							tmp_vec.push_back(make_pair(k, alpha_nk));
 							if (!is_ever_active_n[k]){
+								for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++)
+									inside[it_b->first] = true;
+								for (vector<Int>::iterator it_e = ever_act_alpha[n].begin(); it_e != ever_act_alpha[n].end(); it_e++){
+									Int i = *it_e, j = k;
+									if (i > j){
+										Int temp = i; i = j; j = temp;
+									}
+									Int offset = K*i+j;
+									if (inside[offset]) continue;
+									Float* temp_float = new Float[4];
+									memset(temp_float, 0.0, sizeof(Float)*4);
+									act_beta[n].push_back(make_pair(offset, temp_float));
+								}
+								for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++)
+									inside[it_b->first] = false;
 								is_ever_active_n[k] = true;
 								ever_act_alpha[n].push_back(k);
 							}
@@ -344,13 +373,13 @@ class BCFWsolve{
 						for (Int d = 0; d < 4; d++){
 							beta_nij[d] = beta_new[offset][d];
 						}
-						/*if (fabs(beta_nij[3]) > 1e-12 || (is_ever_active[n][i] && is_ever_active[n][j]) ){
+						if (fabs(beta_nij[3]) > 1e-12 || (is_ever_active[n][i] && is_ever_active[n][j]) ){
 							tmp_vec.push_back(make_pair(offset, beta_nij));
 						} else {
 							delete[] beta_nij;
-						}*/
+						}
 					}	
-					//act_beta_n = tmp_vec;
+					act_beta_n = tmp_vec;
 					beta_nnz += act_beta_n.size();
 					bi_maintain_time += omp_get_wtime();
 				}
@@ -471,7 +500,7 @@ class BCFWsolve{
 				cerr << ", area4=" << (Float)mat_top/mat_bottom;
 				cerr << ", infea=" << p_inf <<  ", d_obj=" << dual_obj();
 				mat_top = mat_bottom = 0;
-				if((iter+1)%1000==0){
+				if((iter+1)%heldout_period==0){
 					if (heldout_prob == NULL){
 						overall_time += omp_get_wtime();
 						cerr << ", train Acc=" << train_acc_joint();
@@ -1235,6 +1264,7 @@ class BCFWsolve{
 		//for heldout option
 		MultilabelProblem* heldout_prob;		
 		Int early_terminate;
+		Int heldout_period;
 
 		vector<Instance*>* data;
 		Float C;

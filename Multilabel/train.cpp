@@ -22,6 +22,8 @@ void exit_with_help(){
 	cerr << "-h heldout data set: use specified heldout data set" << endl;
 	//cerr << "-b brute_force search: use naive search (default off)" << endl;
 	//cerr << "-w write_model_period: write model file every (arg) iterations (default max_iter)" << endl;
+	cerr << "-t eta: set eta to (arg)" << endl;
+	cerr << "-o heldout_period: period(#iters) to report heldout accuracy (default 10)" << endl;
 	cerr << "-e early_terminate: stop if heldout accuracy doesn't increase in (arg) iterations (need -h) (default 3)" << endl;
 	cerr << "-a admm_step_size: admm update step size (default 1.0) " << endl;
 	exit(0);
@@ -67,6 +69,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 			case 'a': param->admm_step_size = atof(argv[i]);
 				  break;
 			case 't': param->eta = atof(argv[i]);
+				  break;
+			case 'o': param->heldout_period = atoi(argv[i]);
 				  break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;
