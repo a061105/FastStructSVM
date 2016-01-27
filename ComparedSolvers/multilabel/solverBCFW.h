@@ -127,11 +127,11 @@ Model* solverBCFW(Param* param, Option* options){
 				minus_time -= omp_get_wtime();
 
 				double testPred_time = -omp_get_wtime();
-				double test_error = 0;//average_loss( param, n_train, n_train + n_test, param->data, param->labels, maxOracle, model_debug);
+				double test_error = average_loss( param, n_train, n_train + n_test, param->data, param->labels, maxOracle, model_debug);
 				testPred_time += omp_get_wtime();
 				
 				double d_obj = dual_obj(param, model_debug->w, loss_term);
-				double p_obj = 0;//primal_obj(param, 0, n_train, model_debug);
+				double p_obj = primal_obj(param, 0, n_train, model_debug);
 				
 				minus_time += omp_get_wtime();
 				double end = omp_get_wtime();
