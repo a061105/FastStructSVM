@@ -271,6 +271,7 @@ class Param{
 	Int early_terminate;
 	Float admm_step_size;
 	Float eta; //Augmented-Lagrangian parameter
+	Int heldout_period;
 
 	Param(){
 		solver = 0;
@@ -279,6 +280,7 @@ class Param{
 		eta = 10;
 		heldout_prob = NULL;
 		heldoutFname = NULL;
+		heldout_period = -1;
 		early_terminate = -1;
 		admm_step_size = 0.0;
 	}

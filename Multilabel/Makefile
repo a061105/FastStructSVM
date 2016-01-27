@@ -16,13 +16,14 @@ blas/blas.a: blas/*.c blas/*.h
 clean:
 		rm -f *~ *.o train
 
-scale=subtrain
+scale=train
 data_dir=/scratch/cluster/ianyen/data/multilabel/
 s=1
 a=1
 m=10000
 e=10
 t=100
+o=10
 
 bibtex:
 	./train -s $(s) -m 10000 $(data_dir)/multilabel/bibtex.$(scale)
@@ -30,12 +31,12 @@ bibtex:
 yeast:
 	$(eval train_file := $(data_dir)/yeast_$(scale).svm)
 	$(eval test_file := $(data_dir)/yeast_subtrain.svm)
-	./train -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
+	./train -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 rcv1_regions:
 	$(eval train_file := $(data_dir)/rcv1_regions_$(scale).svm)
-	$(eval test_file := $(data_dir)/rcv1_regions_test.5k)
-	./train -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
+	$(eval test_file := $(data_dir)/rcv1_regions_test.03k)
+	./train -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 Eur-Lex:
 	$(eval train_file := $(data_dir)/Eur-Lex.$(scale))
