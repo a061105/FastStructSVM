@@ -122,8 +122,8 @@ Model* solverBCFW(Param* param, Option* options){
 				}
 			}
 			
-			//if( k % n_test == 0 ){
-			if( k % 1 == 0 ){
+			if( k % n_test == 0 ){
+			//if( k % 1 == 0 ){
 				minus_time -= omp_get_wtime();
 
 				double testPred_time = -omp_get_wtime();
