@@ -408,6 +408,7 @@ class Param{
 	int write_model_period;
 	int early_terminate;
 	Float admm_step_size;
+	bool do_subSolve;
 	Param(){
 		solver = 0;
 		C = 1.0;
@@ -419,6 +420,7 @@ class Param{
 		write_model_period = 0;
 		early_terminate = 3;
 		admm_step_size = 1.0;
+		do_subSolve = true;
 	}
 };
 

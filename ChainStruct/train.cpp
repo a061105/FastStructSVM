@@ -24,6 +24,7 @@ void exit_with_help(){
 	cerr << "-w write_model_period: write model file every (arg) iterations (default max_iter)" << endl;
 	cerr << "-e early_terminate: stop if heldout accuracy doesn't increase in (arg) iterations (need -h) (default 3)" << endl;
 	cerr << "-a admm_step_size: admm update step size (default 1.0) " << endl;
+	cerr << "-u non-fully corrective update: use non-fully corrective update (default off) " << endl;
 	exit(0);
 }
 
@@ -67,6 +68,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 			case 'a': param->admm_step_size = atof(argv[i]);
 				  break;
 			case 't': param->eta = atof(argv[i]);
+				  break;
+			case 'u': param->do_subSolve = false; --i;
 				  break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;

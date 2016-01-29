@@ -16,6 +16,7 @@ class BCFWsolve{
 		
 		//Parse info from ChainProblem
 		using_brute_force = param->using_brute_force;
+		do_subSolve = param->do_subSolve;
 		split_up_rate = param->split_up_rate;
 		prob = param->prob;
 		heldout_prob = param->heldout_prob;
@@ -297,7 +298,11 @@ class BCFWsolve{
 				//subproblem solving
 				Float loss_per_node = 1.0/seq->T;
 				uni_subSolve_time -= get_current_time();
-				uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
+				if (do_subSolve){
+					uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
+				} else {
+					uni_update(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node, iter);
+				}
 				uni_subSolve_time += get_current_time();
 				//maIntain relationship between w and alpha
 				uni_maintain_time -= get_current_time();
@@ -578,7 +583,103 @@ class BCFWsolve{
 	}
 
 	private:
-	
+
+	void uni_update(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node, Int iter){
+		
+		//data
+		Seq* seq = data->at(n);
+		Int yi = seq->labels[t];
+		assert(yi == act_uni_index[0].first);
+		SparseVec* xi = seq->features[t];
+		//variable values
+		Float Qii = Q_diag[i];
+		//Float* alpha_i = alpha[i];
+		
+		Float* msg_to_left = zero_msg;
+		Float* msg_to_right = zero_msg;
+		if (ir != -1)
+			msg_to_right = msg_left[ir];
+		if (il != -1)
+			msg_to_left = msg_right[il];
+		Int size_grad_heap = act_uni_index.size();
+		for(Int it = 0; it < size_grad_heap; it++){
+			pair<Int, Float> p = act_uni_index[it];
+			Int k = p.first;
+			prod[it] = loss_per_node - eta*(msg_to_right[k]+msg_to_left[k]);
+		}
+		prod[0] -= loss_per_node;
+
+		//compute gradient (bottleneck is here)
+		for(SparseVec::iterator itt=xi->begin(); itt!=xi->end(); itt++){
+			Int f_ind = itt->first;
+			Float f_val = itt->second;
+			for(Int it = 0; it < size_grad_heap; it++){
+				Int k = act_uni_index[it].first;
+				prod[it] += w[ f_ind ][k] * f_val;
+			}
+		}
+
+		Int max_neg = -1;
+		Float max_val_neg = -INFI;
+		for(Int it = 1; it < size_grad_heap; it++){
+			if (prod[it] > max_val_neg){
+				max_neg = act_uni_index[it].first;
+				max_val_neg = prod[it];
+			}
+		}
+		Float obj = (prod[0] - max_val_neg) * C;
+		if (max_neg == -1 || obj >= 0.0){
+			//s_k = all zero vector
+			for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
+				alpha_new[it_a->first] = 0.0;
+			}
+		} else {
+			//s_k = all zero but yi and max_neg
+			for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
+				alpha_new[it_a->first] = 0.0;
+			}
+			alpha_new[yi] += C;
+			alpha_new[max_neg] -= C;
+		}
+
+		//compute gamma
+		Float gamma = 2.0/((Float)iter+4.0);
+		Float up = 0.0, down = 0.0;
+		for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
+			Int k = it_a->first;
+			down += (Qii + 2*eta) * (alpha_new[k] - it_a->second) * (alpha_new[k] - it_a->second);
+			for(SparseVec::iterator itt=xi->begin(); itt!=xi->end(); itt++){
+				Int f_ind = itt->first;
+				Float f_val = itt->second;
+				up += (it_a->second-alpha_new[k]) * w[ f_ind ][k] * f_val;
+			}
+			if (k != yi)
+				up += (it_a->second - alpha_new[k]) * loss_per_node;
+			up -= eta * (msg_to_right[k] + msg_to_left[k]) * (it_a->second - alpha_new[k]);
+		}
+		if (fabs(down) > 1e-12)
+			gamma = up / down;
+		else
+			gamma = 0.0;
+		if (gamma < 0.0)
+			gamma = 0.0;
+		if (gamma > 1.0)
+			gamma = 1.0;
+		
+		for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
+			Int k = it_a->first;
+			alpha_new[k] = gamma * alpha_new[k] + (1-gamma)*it_a->second;
+		}
+		for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
+			Int k = it_a->first;
+			//cout << prod[0] << " " << max_val_neg << " " << alpha_new[k] << endl;
+			if (k == yi)
+				assert(alpha_new[k] >= 0.0 && alpha_new[k] <= (Float)C);
+			else
+				assert(alpha_new[k] <= 0.0 && alpha_new[k] >= -(Float)C);
+		}
+		
+	}	
 
 	void uni_subSolve(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node ){ //solve i-th unigram factor
 		//memset(prod, 0.0, sizeof(Float)*K);
@@ -1162,10 +1263,12 @@ class BCFWsolve{
 
 	Float** mu; // 2M*K Lagrangian Multipliers on consistency constraInts
 	//Float** messages;// 2M*K message=(E*beta-alpha+\frac{1}{\eta}\mu)
-	
+
+	bool do_subSolve;	
+
 	Float* h_left;
 	Float* h_right;
-
+	
 	Int max_iter;
 	Int write_model_period;
 	char* modelFname;
