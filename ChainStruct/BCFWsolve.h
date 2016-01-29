@@ -301,7 +301,7 @@ class BCFWsolve{
 				if (do_subSolve){
 					uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
 				} else {
-					uni_update(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node, iter);
+					uni_update(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
 				}
 				uni_subSolve_time += get_current_time();
 				//maIntain relationship between w and alpha
@@ -376,7 +376,10 @@ class BCFWsolve{
 				
 				//subproblem solving
 				bi_subSolve_time -= get_current_time();
-				bi_subSolve(i, n, t, act_kk_index[i], beta_new);
+				if (do_subSolve)
+					bi_subSolve(i, n, t, act_kk_index[i], beta_new);
+				else
+					bi_update(i, n, t, act_kk_index[i], beta_new);
 				bi_subSolve_time += get_current_time();
 
 				//maIntain relationship between v and beta
@@ -584,7 +587,7 @@ class BCFWsolve{
 
 	private:
 
-	void uni_update(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node, Int iter){
+	void uni_update(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node){
 		
 		//data
 		Seq* seq = data->at(n);
@@ -643,7 +646,7 @@ class BCFWsolve{
 		}
 
 		//compute gamma
-		Float gamma = 2.0/((Float)iter+4.0);
+		Float gamma = 0.0;
 		Float up = 0.0, down = 0.0;
 		for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
 			Int k = it_a->first;
@@ -828,6 +831,98 @@ class BCFWsolve{
 		}
 	}
 	
+	void bi_update(Int i, Int n, Int t, vector<pair<Int, Float>>& act_bi_index, Float* beta_new){
+			
+		//data
+		Seq* seq = data->at(n);
+		Int yi = seq->labels[t];
+		Int yj = seq->labels[t+1];
+		Int yi_yj = yi*K + yj;
+
+		//variable values
+		Float* msg_from_left = msg_left[i];
+		Float* msg_from_right = msg_right[i];
+		
+		//compute gradient
+		size_grad_heap = act_bi_index.size();
+		Int ind = 0;
+		Int max_neg = -1;
+		Float max_val_neg = -INFI;
+		Float obj = 0.0;
+		for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+			Int k1k2 = it->first;
+			Int k1 = k1k2 / K;
+			Int k2 = k1k2 % K;
+			grad[ind] = v[k1][k2]+eta*(msg_from_left[k1]+msg_from_right[k2]);
+			if (k1k2 != yi_yj && grad[ind] > max_val_neg){
+				max_neg = k1k2;
+				max_val_neg = grad[ind];
+			} 
+			if (k1k2 == yi_yj) {
+				obj += grad[ind];
+			}
+			ind++;
+		}
+
+		if (max_neg == -1 || obj - max_val_neg >= 0.0){
+			//all zero vector
+			for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+				Int k1k2 = it->first;
+				beta_new[k1k2] = 0.0;
+			}
+		} else {
+			//all zero vector except yi_yj and max_neg
+			for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+				Int k1k2 = it->first;
+				beta_new[k1k2] = 0.0;
+			}
+			beta_new[yi_yj] = C;
+			beta_new[max_neg] = -C;
+		}
+
+		Float* beta_suml = new Float[K];		
+		Float* beta_sumr = new Float[K];		
+		
+		memset(beta_suml, 0.0, sizeof(Float)*K);
+		memset(beta_sumr, 0.0, sizeof(Float)*K);
+		Float gamma = 0.0, down = 0.0, up = 0.0;
+		for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+			Int k1k2 = it->first;
+			Int k1 = k1k2 / K, k2 = k1k2 % K;
+			Float delta_beta = beta_new[k1k2] - it->second;
+			down -= eta * beta_suml[k1] * beta_suml[k1];
+			down -= eta * beta_sumr[k2] * beta_sumr[k2];
+			beta_suml[k1] += delta_beta;
+			beta_sumr[k2] += delta_beta;
+			down += eta * beta_suml[k1] * beta_suml[k1];
+			down += eta * beta_sumr[k2] * beta_sumr[k2];
+			up -= eta * (msg_from_left[k1] + msg_from_right[k2]) * delta_beta;
+			
+		}
+		
+		for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+			Int k1k2 = it->first;
+			Int k1 = k1k2 / K, k2 = k1k2 % K;
+			Float delta_beta = beta_new[k1k2] - it->second;
+			up -= v[k1][k2] * delta_beta;
+			down += delta_beta * delta_beta;
+		}
+		if (fabs(down) > 1e-12)
+			gamma = up/down;
+		if (gamma > 1.0) 
+			gamma = 1.0;
+		if (gamma < 0.0) 
+			gamma = 0.0;
+		//record alpha new values
+		ind = 0;
+		for (vector<pair<Int, Float>>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
+			Int k1k2 = it->first;
+			beta_new[k1k2] = beta_new[k1k2] * gamma + (1 - gamma) * it->second; 
+			ind++;
+		}
+		delete beta_suml;
+		delete beta_sumr;
+	}
 	
 	void bi_subSolve(Int i, Int n, Int t, vector<pair<Int, Float>>& act_bi_index, Float* beta_new){
 			
