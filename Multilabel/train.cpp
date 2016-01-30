@@ -26,6 +26,7 @@ void exit_with_help(){
 	cerr << "-o heldout_period: period(#iters) to report heldout accuracy (default 10)" << endl;
 	cerr << "-e early_terminate: stop if heldout accuracy doesn't increase in (arg) iterations (need -h) (default 3)" << endl;
 	cerr << "-a admm_step_size: admm update step size (default 1.0) " << endl;
+	cerr << "-u non-fully corrective update: use non-fully corrective update (default off) " << endl;
 	exit(0);
 }
 
@@ -72,6 +73,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 				  break;
 			case 'o': param->heldout_period = atoi(argv[i]);
 				  break;
+			case 'u': param->do_subSolve = false; --i;
+			          break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;
 				  exit(0);

@@ -1,6 +1,8 @@
 #include "util.h"
 #include "multilabel.h"
 #include <cassert>
+#include <iomanip>
+#include <ios>
 
 typedef vector<pair<Int, Float>> PairVec;
 
@@ -13,6 +15,7 @@ class BCFWsolve{
 
 		BCFWsolve(Param* param){
 
+			cout.precision(10);
 			//Parse info from ChainProblem
 			prob = param->prob;
 			heldout_prob = param->heldout_prob;
@@ -34,6 +37,7 @@ class BCFWsolve{
 			admm_step_size = param->admm_step_size;
 			early_terminate = param->early_terminate;
 			heldout_period = param->heldout_period;
+			do_subSolve = param->do_subSolve;
 			if (heldout_period == -1){
 				heldout_period = 10;
 			}
@@ -271,7 +275,10 @@ class BCFWsolve{
 
 					//subproblem solving
 					uni_subSolve_time -= omp_get_wtime();
-					uni_subSolve(n, alpha_new);
+					if (do_subSolve)
+						uni_subSolve(n, alpha_new);
+					else
+						uni_update(n, alpha_new, iter);
 					uni_subSolve_time += omp_get_wtime();
 
 					//maIntain relationship between w and alpha
@@ -626,6 +633,254 @@ class BCFWsolve{
 					alpha_new[k] = min( max( it_alpha->second - grad[k]/Qii, -(Float)C ), 0.0 );
 			}
 	
+			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++)
+				alpha_n[it_alpha->first] = 0.0;
+
+			for (vector<Int>::iterator it_e = ever_act_alpha_n->begin(); it_e != ever_act_alpha_n->end(); it_e++)
+				grad[*it_e] = 0.0;
+			
+			for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
+				Int offset = it_b->first;
+				Int i = offset / K, j = offset % K;
+				inside[offset] = false;
+				beta_n[offset] = NULL;
+				grad[i] = 0.0; grad[j] = 0.0;
+			}
+			clean_mu_n(n);
+		}
+
+		Float calc_d_obj(Int n, Float* alpha_new, Float gamma){
+			Instance* ins = data->at(n);
+			for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
+				Int j = it->first;
+				Float fval = it->second;
+				Float* wj = w[j];
+				for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+					Int k = it_alpha->first;
+					Float delta_alpha = gamma * (alpha_new[k] - it_alpha->second);
+					wj[k] += fval * delta_alpha;
+				}
+			}
+
+			Float* temp_wx = new Float[K];
+			memset(temp_wx, 0.0, sizeof(Float)*K);
+			for (Int k = 0; k < K; k++){
+				for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
+					Int j = it->first;
+					Float fval = it->second;
+					temp_wx[k] += w[j][k] * fval;
+				}
+			}
+			//cout << "temp_wx=" << temp_wx[0] << " " << temp_wx[1] << endl;
+
+			//update and shrink alpha
+			bool* is_ever_active_n = is_ever_active[n];
+			Float* temp = new Float[K];
+			for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+				Int k = it_alpha->first;
+				temp[k] = it_alpha->second;
+				it_alpha->second += gamma * (alpha_new[k] - temp[k]);
+			}
+			
+			for (Int j = 0; j < D; j++){
+				for (Int k = 0; k < K; k++){
+				//	cout << w[j][k] << " ";
+				}
+				//cout << endl;
+			}
+
+			//cout << "alpha:" << endl;
+			for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+				Int k = it_alpha->first;
+			//	cout << k << " " << it_alpha->second << endl;
+			}
+			/*
+			for(vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
+				Int k1k2 = it_b->first;
+				cout << k1k2 ;
+				cout << " " << it_b->second[0];
+				cout << " " << it_b->second[1];
+				cout << " " << it_b->second[2];
+				cout << " " << it_b->second[3];
+				cout << endl;
+			}
+			
+			
+
+			cache_mu_n(n);
+			
+			cout << "mu=" << mu_n[1][0] << " " << mu_n[1][1] << endl;
+
+			clean_mu_n(n);
+			*/
+			Float d_obj = dual_obj();
+			
+			for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+				Int k = it_alpha->first;
+				it_alpha->second = temp[k];
+			}
+			delete[] temp;
+
+			for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
+				Int j = it->first;
+				Float fval = it->second;
+				Float* wj = w[j];
+				for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+					Int k = it_alpha->first;
+					Float delta_alpha = gamma * (alpha_new[k] - it_alpha->second);
+					wj[k] -= fval * delta_alpha;
+				}
+			}
+
+			return d_obj;		
+		}
+
+		void uni_update(Int n, Float* alpha_new, Int iter){ //solve n-th unigram factor
+
+			Instance* ins = data->at(n);
+			Float Qii = Q_diag[n];
+			PairVec* act_alpha_n = &(act_alpha[n]);
+			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
+			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
+			//memset(alpha_n, 0.0, sizeof(Float)*K);
+			memset(grad, 0.0, sizeof(Float)*K);
+			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
+				alpha_n[it_alpha->first] = it_alpha->second;
+			}
+			
+			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n->begin(); it_beta != act_beta_n->end(); it_beta++){
+				Int offset = it_beta->first;
+				beta_n[offset] = it_beta->second;
+				inside[offset] = true;
+			}
+			cache_mu_n(n);
+			
+			bool* is_pos_label_n = is_pos_label[n];
+			bool* is_ever_active_n = is_ever_active[n];
+			
+			for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
+				Float* wj = w[it->first];
+				for(PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
+					Int k = it_alpha->first;
+					grad[k] += wj[k]*it->second;
+				}
+			}
+
+			for(PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
+				Int k = it_alpha->first;
+				if( !is_pos_label_n[k] )
+					grad[k] += 1.0;
+				else
+					grad[k] += -1.0;
+			}
+		
+			//cout << "grad=" << grad[0] << " " << grad[1] << endl;	
+			Float msg_L, msg_R;
+			for (vector<Int>::iterator it_alpha = ever_act_alpha_n->begin(); it_alpha != ever_act_alpha_n->end(); it_alpha++){
+				Int ii = *it_alpha;
+				for (vector<Int>::iterator it_alpha2 = it_alpha+1; it_alpha2 != ever_act_alpha_n->end(); it_alpha2++){
+					Int i = ii;
+					Int j = *it_alpha2;
+					if (i > j){
+						Int temp = i;
+						i = j;
+						j = temp;
+					}
+					Float alpha_ni = alpha_n[i];
+					Int Ki = K*i;
+					Float alpha_nj = alpha_n[j];
+					Int offset = Ki + j;
+					assert(mu_n[offset] != NULL);
+					if (inside[offset]){
+						msg_L = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][F_LEFT];
+						msg_R = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][F_RIGHT];
+						//cout << mu_n[offset][F_LEFT] << " " << mu_n[offset][F_RIGHT] << endl;
+					} else {
+						Float beta_nij01, beta_nij10;
+						recover_beta(n, i, j, alpha_n, mu_n, beta_nij10, beta_nij01);
+						msg_L = beta_nij10 - alpha_n[i] + mu_n[offset][F_LEFT];
+						msg_R = beta_nij01 - alpha_n[j] + mu_n[offset][F_RIGHT];
+					}
+					//cout << "L: " << eta * msg_L << ", R:" << eta * msg_R << endl;
+					grad[i] -= eta * msg_L;
+					grad[j] -= eta * msg_R;
+				}
+			}
+			/*
+			cout << "beta_n=" << beta_n[1][0] << " " << beta_n[1][1] << endl;
+			cout << "beta_n=" << beta_n[1][2] << " " << beta_n[1][3] << endl;
+			cout << "alpha_n=" << alpha_n[0] << " " << alpha_n[1] << endl;
+			cout << "grad=" << grad[0] << " " << grad[1] << endl;	
+			*/
+			for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
+				Int offset = it_b->first;
+				Int i = offset / K, j = offset % K;
+				if (!is_ever_active_n[i] || !is_ever_active_n[j]){
+					msg_L = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][F_LEFT];
+					msg_R = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][F_RIGHT];
+					grad[i] -= eta * msg_L;
+					grad[j] -= eta * msg_R;
+				}
+			}
+
+			//compute best extreme point of FW
+			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
+				Int k = it_alpha->first;
+				if (is_pos_label_n[k]){
+					if (grad[k] > 0.0){
+						alpha_new[k] = 0.0;
+					} else {
+						alpha_new[k] = C;
+					}
+				} else {
+					if (grad[k] > 0.0){
+						alpha_new[k] = -C;
+					} else {
+						alpha_new[k] = 0.0;
+					}
+				}
+			}	
+
+			//compute gamma
+			Float gamma = 0.0, up = 0.0, down = 0.0;
+			for (PairVec::iterator it_a = act_alpha_n->begin(); it_a != act_alpha_n->end(); it_a++){
+				Int k = it_a->first;
+				Float delta_alpha = alpha_new[k] - it_a->second;
+				up -= grad[k] * delta_alpha; 
+				down += (Qii) * delta_alpha * delta_alpha;
+			}
+
+			//cout << "up=" << up << ", down=" << down << endl;
+			if (fabs(down) > 1e-12)
+				gamma = up / down;
+			if (gamma > 1.0)
+				gamma = 1.0;
+			if (gamma < 0.0)
+				gamma = 0.0;
+			
+			/*Float d_obj = dual_obj();
+			Float d_obj2 = calc_d_obj(n, alpha_new, 2.0 / (iter + 4.0));
+			Float d_obj1 = calc_d_obj(n, alpha_new, gamma);
+			if (d_obj1 > d_obj2 + 1e-12){
+				for (PairVec::iterator it_a = act_alpha_n->begin(); it_a != act_alpha_n->end(); it_a++){
+					Int k = it_a->first;
+					cout << is_pos_label_n[k] << ", Qii=" << Qii << ", grad[k]=" << grad[k];
+					cout << ", alpha_new[k]=" << alpha_new[k];
+					cout << ", alpha_nk=" << it_a->second << endl;
+				}
+				cout << "gamma=" << gamma << ", d_obj=" << d_obj << endl;
+				cout << "d_obj1=" << (d_obj1 - d_obj) << ", d_obj2=" << (d_obj2 - d_obj) << endl;
+			}
+			assert(d_obj1 <= d_obj2 + 1e-12);
+			*/
+			
+			//compute alpha new
+			for (PairVec::iterator it_a = act_alpha_n->begin(); it_a != act_alpha_n->end(); it_a++){
+				Int k = it_a->first;
+				alpha_new[k] = (1-gamma)*it_a->second + gamma*alpha_new[k];
+			}
+
+			// clean up
 			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++)
 				alpha_n[it_alpha->first] = 0.0;
 
@@ -1170,8 +1425,8 @@ class BCFWsolve{
 						Int offset = K*i+j;
 						if (inside[offset]){
 							//cout << "uni subsolve: before mu, offset=" << offset << endl;
-							Float delta_mu_l = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i];
-							Float delta_mu_r = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j];
+							Float delta_mu_l = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][0];
+							Float delta_mu_r = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][1];
 							p_inf += delta_mu_l * delta_mu_l;
 							p_inf += delta_mu_r * delta_mu_r;
 						} else {
@@ -1197,8 +1452,8 @@ class BCFWsolve{
 							proj(tmp_L, tmp_R);
 							beta_nij10 += tmp_L;
 							beta_nij01 += tmp_R;
-							Float delta_mu_l = beta_nij10 - alpha_n[i];
-							Float delta_mu_r = beta_nij01 - alpha_n[j];
+							Float delta_mu_l = beta_nij10 - alpha_n[i] + mu_n[offset][0];
+							Float delta_mu_r = beta_nij01 - alpha_n[j] + mu_n[offset][1];
 							p_inf += delta_mu_l * delta_mu_l;
 							p_inf += delta_mu_r * delta_mu_r;
 						}
@@ -1215,8 +1470,8 @@ class BCFWsolve{
 					}
 					//assert(!is_ever_active_n[i] && !is_ever_active_n[j]);
 					Float* beta_nij = it_beta->second;
-					Float delta_mu_l = beta_nij[2] + beta_nij[3] - alpha_n[i];
-					Float delta_mu_r = beta_nij[1] + beta_nij[3] - alpha_n[j];
+					Float delta_mu_l = beta_nij[2] + beta_nij[3] - alpha_n[i] + mu_n[offset][0];
+					Float delta_mu_r = beta_nij[1] + beta_nij[3] - alpha_n[j] + mu_n[offset][1];
 					p_inf += delta_mu_l * delta_mu_l;
 					p_inf += delta_mu_r * delta_mu_r;
 					beta_n[offset] = NULL;
@@ -1297,8 +1552,8 @@ class BCFWsolve{
 		ArrayHeap v_heap;
 		Int v_heap_size;	
 		Int* v_index;
-		
-		//for debug
+
+		bool do_subSolve;		
 
 		vector<pair<Int, Float*>>* mu; // N*K^2 * 2 Lagrangian Multipliers on consistency constraInts
 

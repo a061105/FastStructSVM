@@ -272,7 +272,7 @@ class Param{
 	Float admm_step_size;
 	Float eta; //Augmented-Lagrangian parameter
 	Int heldout_period;
-
+	bool do_subSolve;
 	Param(){
 		solver = 0;
 		C = 1;
@@ -283,6 +283,7 @@ class Param{
 		heldout_period = -1;
 		early_terminate = -1;
 		admm_step_size = 0.0;
+		do_subSolve = true;
 	}
 };
 
