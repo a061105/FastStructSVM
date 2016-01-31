@@ -347,7 +347,11 @@ class BCFWsolve{
 				
 					//subproblem solving
 					bi_subSolve_time -= omp_get_wtime();
-					bi_subSolve(n, beta_new);
+					if (do_subSolve){
+						bi_subSolve(n, beta_new);
+					} else {
+						bi_update(n, beta_new, iter);
+					}
 					bi_subSolve_time += omp_get_wtime();
 
 					//maIntain relationship between v and beta
@@ -996,6 +1000,156 @@ class BCFWsolve{
 			delete[] inside_a;
 		}
 
+		void bi_update(Int n, Float** beta_new, Int iter){
+
+			Float* Dk = new Float[4];
+			Float* grad = new Float[4];
+
+			//data
+			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
+
+			memset(alpha_n, 0.0, sizeof(Float)*K);
+			for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+				alpha_n[it_alpha->first] = it_alpha->second;
+			}
+			cache_mu_n(n);
+			//indicator of ground truth labels
+			bool* is_pos_label_n = is_pos_label[n];
+
+			Float Qii = (1.0+eta*2);
+			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n->begin(); it_beta != act_beta_n->end(); it_beta++){
+					Int offset = it_beta->first;
+					Float* beta_nij = it_beta->second;
+					Int i = offset / K, j = offset % K;
+					assert(i < j);
+					Float* mu_nij = mu_n[offset];
+					//compute gradient
+					for(int d=0;d<4;d++)
+						grad[d] = 0.0;
+
+					grad[3] += v[i][j];
+					assert(alpha_n != NULL);
+					assert(mu_nij != NULL);
+					assert(beta_nij != NULL);
+					Float msg_L = beta_nij[2]+beta_nij[3] - alpha_n[i] + mu_nij[F_LEFT];
+					grad[2] += eta*( msg_L ); //2:10
+					grad[3] += eta*( msg_L ); //3:11
+
+					Float msg_R = beta_nij[1]+beta_nij[3] - alpha_n[j] + mu_nij[F_RIGHT];
+					grad[1] += eta*( msg_R ); //1:01
+					grad[3] += eta*( msg_R ); //1:11
+					//compute max gradient among negative bits
+					Int max_neg_bits = -1;
+					Float max_val_neg = -INFI;
+					Int pos_bits = 2*is_pos_label_n[i] + is_pos_label_n[j];
+					for(Int d=0;d<4;d++){
+						if( d != pos_bits ){
+							if (grad[d] > max_val_neg){
+								max_neg_bits = d;
+								max_val_neg = grad[d];
+							}
+						}
+					}
+					for (Int d = 0; d < 4; d++)
+						beta_new[offset][d] = 0.0;
+
+					if (grad[pos_bits] - max_val_neg < 0){
+						beta_new[offset][pos_bits] = C;
+						beta_new[offset][max_neg_bits] = -C;
+					}
+					Float delta_beta11 = beta_new[offset][3] - beta_nij[3];
+					Float delta_beta10 = beta_new[offset][2] - beta_nij[2];
+					Float delta_beta01 = beta_new[offset][1] - beta_nij[1];
+					Float up = - (delta_beta11 * v[i][j] + eta * msg_L * (delta_beta11 + delta_beta10) + eta * msg_R * (delta_beta11 + delta_beta01) );
+					Float down = delta_beta11 * delta_beta11 + eta * ((delta_beta10 + delta_beta11) * (delta_beta10 + delta_beta11) + (delta_beta01 + delta_beta11) * (delta_beta01 + delta_beta11));
+					Float gamma = 0.0;
+					if (fabs(down) > 1e-12) gamma = up / down;
+					if (gamma < 0.0) gamma = 0.0;
+					if (gamma > 1.0) gamma = 1.0;
+
+					/*Float* delta_beta = new Float[4];
+					Float d_obj = dual_obj();
+					for (Int d = 0; d < 4; d++){
+						delta_beta[d] = (beta_new[offset][d] - beta_nij[d]);
+						beta_nij[d] += delta_beta[d] * gamma;
+						cout << d_obj << " " << (delta_beta[d] * gamma) << " " << dual_obj() << endl;
+					}
+					v[i][j] += delta_beta[3] * gamma;
+					Float d_obj_after = dual_obj();
+					if (d_obj_after > d_obj){
+						cout << "gamma=" << gamma << endl;
+						cout << "pos_bits=" << pos_bits << endl;
+						cout << "max_neg_bits=" << max_neg_bits << endl;
+						cout << "grad: ";
+						for (Int d = 0; d < 4; d++){
+							cout << grad[d] << " ";
+						}
+						cout << endl;
+						cout << "delta_beta: ";
+						for (Int d = 0; d < 4; d++){
+							cout << delta_beta[d] << " ";
+						}
+						cout << endl;
+						cout << "objs:" << d_obj_after << " " << d_obj << endl;
+						cout << beta_new[offset][pos_bits] << " " << beta_nij[pos_bits] << endl;
+						cout << beta_new[offset][max_neg_bits] << " " << beta_nij[max_neg_bits] << endl;
+					}
+					assert(d_obj_after <= d_obj);
+					v[i][j] -= delta_beta[3] * gamma;
+					for (Int d = 0; d < 4; d++)
+						beta_nij[d] -= delta_beta[d] * gamma;
+					delete[] delta_beta;
+					*/
+					//record beta new values
+					for (int d=0;d<4;d++)
+						beta_new[offset][d] = beta_nij[d] + gamma * (beta_new[offset][d] - beta_nij[d]);
+					
+					for (int d=0;d<4;d++){
+						if ( d != pos_bits){
+							if (beta_new[offset][d] >= -C-1e-12 && beta_new[offset][d] <= 1e-12){
+				
+							} else {
+								cout << "gamma=" << gamma << endl;
+								cout << "pos_bits=" << pos_bits << endl;
+								cout << "max_neg_bits=" << max_neg_bits << endl;
+								cout << "grad: ";
+								for (Int d = 0; d < 4; d++){
+									cout << grad[d] << " ";
+								}
+								cout << endl;
+								//cout << "objs:" << d_obj_after << " " << d_obj << endl;
+								cout << beta_new[offset][d] << " " << beta_nij[d] << endl;
+							}
+							assert(beta_new[offset][d] >= -C-1e-12 && beta_new[offset][d] <= 1e-12);
+						} else {
+							if (beta_new[offset][d] <= C+1e-12 && beta_new[offset][d] >= -1e-12){
+				
+							} else {
+								cout << "gamma=" << gamma << endl;
+								cout << "pos_bits=" << pos_bits << endl;
+								cout << "max_neg_bits=" << max_neg_bits << endl;
+								cout << "grad: ";
+								for (Int d = 0; d < 4; d++){
+									cout << grad[d] << " ";
+								}
+								cout << endl;
+								//cout << "objs:" << d_obj_after << " " << d_obj << endl;
+								cout << beta_new[offset][d] << " " << beta_nij[d] << endl;
+							}
+							assert(beta_new[offset][d] <= C+1e-12 && beta_new[offset][d] >= -1e-12);
+						}
+					}
+			}
+			
+			for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
+				alpha_n[it_alpha->first] = 0.0;
+			}
+			
+			clean_mu_n(n);
+			delete[] Dk;
+			delete[] grad;
+		}
+
 		void bi_subSolve(Int n, Float** beta_new){
 
 			Float* Dk = new Float[4];
@@ -1484,7 +1638,11 @@ class BCFWsolve{
 				clean_mu_n(n);
 			}
 			p_inf *= eta/2.0;
-			
+				
+			cout << "u_obj=" << u_obj << endl;		
+			cout << "bi_obj=" << bi_obj << endl;		
+			cout << "p_inf=" << p_inf << endl;		
+	
 			return u_obj + bi_obj + p_inf;
 		}
 		
