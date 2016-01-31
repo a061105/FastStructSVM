@@ -13,8 +13,8 @@ void exit_with_help(){
 	cerr << "	1 -- BCFW" << endl;
 	//cerr << "-l lambda: L1 regularization weight (default 1.0)" << endl;
 	cerr << "-c cost: cost of each sample (default 1)" << endl;
-	//cerr << "-r speed_up_rate: using 1/r fraction of samples (default min(max(DK/(log(K)nnz(X)),1),d/5) )" << endl;
-	//cerr << "-q split_up_rate: choose 1/q fraction of [K]" << endl;
+	cerr << "-r speed_up_rate: using 1/r fraction of samples (default min(max(DK/(log(K)nnz(X)),1),d/5) )" << endl;
+	cerr << "-q split_up_rate: choose 1/q fraction of [K]" << endl;
 	cerr << "-m max_iter: maximum number of iterations allowed (default 20)" << endl;
 	//cerr << "-i im_sampling: Importance sampling instead of uniform (default not)" << endl;
 	//cerr << "-g max_select: maximum number of greedy-selected dual variables per sample (default 1)" << endl;
@@ -51,12 +51,12 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 				  break;
 //			case 'g': param->max_select = atoi(argv[i]);
 //				  break;
-//			case 'r': param->speed_up_rate = atoi(argv[i]);
-//				  break;
+			case 'r': param->speed_up_rate = atoi(argv[i]);
+				  break;
 //			case 'i': param->using_importance_sampling = true; --i;
 //				  break;
-//			case 'q': param->split_up_rate = atoi(argv[i]);
-//				  break;
+			case 'q': param->split_up_rate = atoi(argv[i]);
+				  break;
 //			case 'p': param->post_solve_iter = atoi(argv[i]);
 //				  break;
 			case 'h': param->heldoutFname = argv[i];

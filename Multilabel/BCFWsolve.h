@@ -35,6 +35,10 @@ class BCFWsolve{
 			max_iter = param->max_iter;
 			admm_step_size = param->admm_step_size;
 			early_terminate = param->early_terminate;
+			split_up_rate = param->split_up_rate;
+			speed_up_rate = param->speed_up_rate;
+			if( speed_up_rate==-1 )
+				speed_up_rate = round( max( min( 5.0*D*K/(N*d)/C/log((Float)K), d/5.0), 1.0) );
 			heldout_period = param->heldout_period;
 			do_subSolve = param->do_subSolve;
 			if (heldout_period == -1){
@@ -780,6 +784,12 @@ class BCFWsolve{
 		}
 
 		void uni_search(Int n, vector<pair<Int, Float>>& act_alpha_n){
+			Int rand_interval = rand() % split_up_rate;
+			Int interval_length = K / split_up_rate;
+			Int range_l = interval_length * rand_interval;
+			Int range_r = interval_length * (rand_interval + 1);
+			if (rand_interval + 1 == split_up_rate)
+				range_r = K;
 			Float* prod = new Float[K];
 			memset(prod, 0.0, sizeof(Float)*K);
 			//memset(alpha_n, 0.0, sizeof(Float)*K);
@@ -805,7 +815,7 @@ class BCFWsolve{
 				Int j = it->first;
 				Float xij = it->second;
 				Float* wj = w[j];
-				for (Int k = 0; k < K; k++){
+				for (Int k = range_l; k < range_r; k++){
 					prod[k] += wj[k]*xij;
 				}
 			}
@@ -815,7 +825,7 @@ class BCFWsolve{
 			bool* is_ever_active_n = is_ever_active[n];
 			//need some msg here
 			Float msg_L = 0.0, msg_R = 0.0;
-			for (Int ii = 0; ii < K; ii++){
+			for (Int ii = range_l; ii < range_r; ii++){
 				if (inside_a[ii]) continue;
 				for (vector<Int>::iterator it_e = ever_act_alpha_n->begin(); it_e != ever_act_alpha_n->end(); it_e++){
 					Int i = ii, j = *it_e;
@@ -853,7 +863,7 @@ class BCFWsolve{
 
 			Int max_k = -1;
 			Float max_val = -INFI;
-			for (Int k = 0; k < K; k++){
+			for (Int k = range_l; k < range_r; k++){
 				if (!inside_a[k] && prod[k] > max_val){
 					max_k = k;
 					max_val = prod[k];
@@ -1512,6 +1522,10 @@ class BCFWsolve{
 		ArrayHeap v_heap;
 		Int v_heap_size;	
 		Int* v_index;
+
+		//uni_search
+		Int split_up_rate;
+		Int speed_up_rate;
 
 		bool do_subSolve;		
 

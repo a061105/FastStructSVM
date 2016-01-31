@@ -273,6 +273,8 @@ class Param{
 	Float eta; //Augmented-Lagrangian parameter
 	Int heldout_period;
 	bool do_subSolve;
+	Int split_up_rate;
+	Int speed_up_rate;
 	Param(){
 		solver = 0;
 		C = 1;
@@ -284,6 +286,8 @@ class Param{
 		early_terminate = -1;
 		admm_step_size = 0.0;
 		do_subSolve = true;
+		split_up_rate = 1;
+		speed_up_rate = -1;
 	}
 };
 

@@ -24,6 +24,7 @@ m=10000
 e=10
 t=100
 o=10
+q=1
 opt=
 
 bibtex:
@@ -32,7 +33,7 @@ bibtex:
 yeast:
 	$(eval train_file := $(data_dir)/yeast_$(scale).tmp)
 	$(eval test_file := $(data_dir)/yeast_subtrain.tmp)
-	./train $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
+	./train -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 rcv1_regions:
 	$(eval train_file := $(data_dir)/rcv1_regions_$(scale).svm)
