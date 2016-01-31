@@ -144,6 +144,12 @@ class BCFWsolve{
 				}
 			}
 
+			using_brute_force_search = param->using_brute_force_search;
+			if (using_brute_force_search){
+				split_up_rate = 1;
+				speed_up_rate = 1;
+			}
+
 			//maintain heap for v[i][j]
 			v_heap_size = 0;
 			v_heap = new pair<Float, Int>[(K*(K-1))/2];
@@ -349,7 +355,11 @@ class BCFWsolve{
 					
 					//search for active variables
 					bi_search_time -= omp_get_wtime();
-					bi_search(n, act_beta[n]);
+					if (using_brute_force_search){
+						bi_brute_force_search(n, act_beta[n]);
+					} else {
+						bi_search(n, act_beta[n]);
+					}
 					bi_search_time += omp_get_wtime();
 				
 					//subproblem solving
@@ -1076,6 +1086,87 @@ class BCFWsolve{
 			delete[] Dk;
 			delete[] grad;
 		}
+		
+		void bi_brute_force_search(Int n, vector<pair<Int, Float*>>& act_beta_n){
+
+			Int max_k1k2 = -1;
+			Float max_val = -1e300;	
+			
+			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
+				Int offset = it_beta->first;
+				inside[offset] = true;
+			}
+			
+			Instance* ins = data->at(n);
+			Labels* pos_labels = &(ins->labels);
+			PairVec* act_alpha_n = &(act_alpha[n]);
+			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
+			cache_mu_n(n);
+
+			bool* is_pos_label_n = is_pos_label[n];
+
+			//memset(alpha_n, 0.0, sizeof(Float)*K);
+			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
+				alpha_n[it_alpha->first] = it_alpha->second;
+			}
+
+			//area 1; y^n_i = y^n_j = 1
+			for (Int i = 0; i < K; i++){
+				Int Ki = K * i;
+				for (Int j = i+1; j < K; j++){
+					Float alpha_ni = alpha_n[i];
+					Float alpha_nj = alpha_n[j];
+					Int offset = Ki + j;
+					if (inside[offset])
+						continue;
+					
+					Float beta_nij01, beta_nij10;
+					recover_beta(n, i, j, alpha_n, mu_n, beta_nij10, beta_nij01);
+					Float msg_L = beta_nij10 - alpha_n[i] + mu_n[offset][F_LEFT];
+					Float msg_R = beta_nij01 - alpha_n[j] + mu_n[offset][F_RIGHT];
+
+					Float val = v[i][j] + eta*(msg_L + msg_R);
+					if (val > max_val){
+						max_k1k2 = offset;
+						max_val = val;
+					}
+					if (is_pos_label_n[i]){
+						//beta^{10} is positive, thus in range [0, C], should consider -gradient
+						msg_L *= (-1);
+					}
+					if (is_pos_label_n[j]){
+						//beta^{01} is positive, thus in range [0, C], should consider -gradient
+						msg_R *= (-1);
+					}
+					if (eta * msg_L > max_val){
+						max_k1k2 = offset;
+						max_val = eta * msg_L;
+					}
+					if (eta * msg_R > max_val){
+						max_k1k2 = offset;
+						max_val = eta * msg_R;
+					}
+				}
+			}
+
+			for (vector<pair<Int, Float*>>::iterator it_beta = act_beta_n.begin(); it_beta != act_beta_n.end(); it_beta++){
+				Int offset = it_beta->first;
+				inside[offset] = false;
+			}
+			
+			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
+				alpha_n[it_alpha->first] = 0.0;
+			}
+
+			if (max_val > 0.0){
+				Float* temp_float = new Float[4];
+				memset(temp_float, 0.0, sizeof(Float)*4);
+				act_beta_n.push_back(make_pair(max_k1k2, temp_float));
+			}
+			clean_mu_n(n);
+			
+			assert(act_beta_n.size() <= K*(K-1)/2);
+		}
 
 		void bi_search(Int n, vector<pair<Int, Float*>>& act_beta_n){
 
@@ -1562,6 +1653,10 @@ class BCFWsolve{
 		//uni_search
 		Int split_up_rate;
 		Int speed_up_rate;
+
+		//bi_search
+		bool using_brute_force_search;
+		
 		//l1 norm of each feature vector
 		Float* l1_norm;
 

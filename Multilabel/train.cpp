@@ -20,7 +20,7 @@ void exit_with_help(){
 	//cerr << "-g max_select: maximum number of greedy-selected dual variables per sample (default 1)" << endl;
 	//cerr << "-p post_train_iter: #iter of post-training w/o L1R (default 0)" << endl;
 	cerr << "-h heldout data set: use specified heldout data set" << endl;
-	//cerr << "-b brute_force search: use naive search (default off)" << endl;
+	cerr << "-b brute_force search: use naive search (default off)" << endl;
 	//cerr << "-w write_model_period: write model file every (arg) iterations (default max_iter)" << endl;
 	cerr << "-t eta: set eta to (arg)" << endl;
 	cerr << "-o heldout_period: period(#iters) to report heldout accuracy (default 10)" << endl;
@@ -61,8 +61,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 //				  break;
 			case 'h': param->heldoutFname = argv[i];
 				  break;
-//			case 'b': param->using_brute_force = true; --i;
-//				  break;
+			case 'b': param->using_brute_force_search = true; --i;
+				  break;
 //			case 'w': param->write_model_period = atoi(argv[i]);
 //				  break;
 			case 'e': param->early_terminate = atoi(argv[i]);
