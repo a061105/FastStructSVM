@@ -149,7 +149,7 @@ class BCFWsolve{
 			Seq* seq = data->at(n);
 			for(Int t=0;t<seq->T;t++){
 				Int i = uni_index( n, t );
-				Q_diag[i] = eta;
+				Q_diag[i] = 0.0;
 				for(SparseVec::iterator it=seq->features[t]->begin(); it!=seq->features[t]->end(); it++){
 					Q_diag[i] += it->second * it->second;
 				}
@@ -596,7 +596,7 @@ class BCFWsolve{
 		assert(yi == act_uni_index[0].first);
 		SparseVec* xi = seq->features[t];
 		//variable values
-		Float Qii = Q_diag[i];
+		Float Qii = Q_diag[i] + 2 * eta;
 		//Float* alpha_i = alpha[i];
 		
 		Float* msg_to_left = zero_msg;
@@ -697,7 +697,7 @@ class BCFWsolve{
 		assert(yi == act_uni_index[0].first);
 		SparseVec* xi = seq->features[t];
 		//variable values
-		Float Qii = Q_diag[i];
+		Float Qii = Q_diag[i] + 2 * eta;
 		//Float* alpha_i = alpha[i];
 		/*if( t!=0 )//not beginning
 			msg_from_left = messages[2*bi_index(n,t-1)+F_RIGHT];
@@ -938,6 +938,8 @@ class BCFWsolve{
 		Int yi = seq->labels[t];
 		Int yj = seq->labels[t+1];
 		Int yi_yj = yi*K + yj;
+		Int il = uni_index(n, t);
+		Int ir = uni_index(n, t+1);
 
 		//variable values
 		//Float* beta_i = beta[i];
@@ -947,7 +949,7 @@ class BCFWsolve{
 		Float* msg_from_right = msg_right[i];
 		
 		//compute gradient
-		Float Qii = (1.0+eta*K);
+		Float Qii = (1.0+eta*(act_k_index[il].size() + act_k_index[ir].size()) );
 		
 			
 		/*for(vector<Int>::iterator it = act_bi_index.begin(); it != act_bi_index.end(); it++){
