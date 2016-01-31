@@ -106,7 +106,7 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 		param->featuremapFunc(param, ins, label,   phi_i);
 		param->featuremapFunc(param, ins, ystar,   phi_star);
 		
-		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar);
+		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar)/labels->size();
 	}
 	
 	double reg_term = 0.0;
