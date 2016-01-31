@@ -39,6 +39,7 @@ class BCFWsolve{
 			speed_up_rate = param->speed_up_rate;
 			if( speed_up_rate==-1 )
 				speed_up_rate = round( max( min( 5.0*D*K/(N*d)/C/log((Float)K), d/5.0), 1.0) );
+			cerr << "r=" << speed_up_rate << endl;
 			heldout_period = param->heldout_period;
 			do_subSolve = param->do_subSolve;
 			if (heldout_period == -1){
@@ -132,6 +133,16 @@ class BCFWsolve{
 					mu_n[offset][1] = 0.0;
 				}
 			}
+			
+			//uni_search
+			l1_norm = new Float[N];
+			for (Int n = 0; n < N; n++){
+				l1_norm[n] = 0.0;
+				Instance* ins = data->at(n);
+				for (SparseVec::iterator it = ins->feature.begin(); it != ins->feature.end(); it++){
+					l1_norm[n] += fabs(it->second);
+				}
+			}
 
 			//maintain heap for v[i][j]
 			v_heap_size = 0;
@@ -175,6 +186,9 @@ class BCFWsolve{
 			}
 			delete[] mu;
 			//delete[] messages;
+
+			//uni_search
+			delete[] l1_norm;
 
 			//some constants
 			delete Q_diag;
@@ -788,12 +802,23 @@ class BCFWsolve{
 			Int interval_length = K / split_up_rate;
 			Int range_l = interval_length * rand_interval;
 			Int range_r = interval_length * (rand_interval + 1);
+			Instance* ins = data->at(n);
 			if (rand_interval + 1 == split_up_rate)
 				range_r = K;
+			Int m = ins->feature.size() / speed_up_rate;
+			if (ins->feature.size() < speed_up_rate){
+				m = ins->feature.size();
+			}
+			vector<Float> rand_nums;
+			for (Int tt = 0; tt < m; tt++){
+				Float random_float = rand();
+				random_float /= (Float)RAND_MAX;
+				random_float *= l1_norm[n];
+				rand_nums.push_back(random_float);
+			}
+			sort(rand_nums.begin(), rand_nums.end(), less<Float>());
 			Float* prod = new Float[K];
 			memset(prod, 0.0, sizeof(Float)*K);
-			//memset(alpha_n, 0.0, sizeof(Float)*K);
-			Instance* ins = data->at(n);
 			cache_mu_n(n);
 			bool* inside_a = new bool[K];
 			memset(inside_a, false, sizeof(bool)*K);
@@ -803,17 +828,28 @@ class BCFWsolve{
 				alpha_n[k] = it_a->second;
 				inside_a[k] = true;
 			}
-
 	
 			for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
 				Int offset = it_b->first;
 				inside[offset] = true;
 				beta_n[offset] = it_b->second;
 			}
-			
-			for (SparseVec::iterator it = ins->feature.begin(); it != ins->feature.end(); it++){
+		
+			vector<Float>::iterator current_index = rand_nums.begin();
+			Float current_sum = 0.0;
+			for (SparseVec::iterator it = ins->feature.begin(); it != ins->feature.end() && current_index != rand_nums.end(); current_index++, it++){
+				current_sum += it->second;
+				if (current_sum < (*current_index)){
+					continue;
+				}
+				
+				Float xij = 0.0;
+				while (current_index != rand_nums.end() && current_sum >= (*current_index)){
+					current_index++;
+					xij += 1.0;
+				}
 				Int j = it->first;
-				Float xij = it->second;
+				xij *= ((it->second > 0.0)?1:(-1));
 				Float* wj = w[j];
 				for (Int k = range_l; k < range_r; k++){
 					prod[k] += wj[k]*xij;
@@ -874,7 +910,7 @@ class BCFWsolve{
 				alpha_n[it->first] = 0.0;
 			}
 
-			if (max_val > -1){
+			if (max_val > (-1.0 * m) / (Float)(ins->feature.size()) ){
 				act_alpha_n.push_back(make_pair(max_k, 0.0));
 			}
 
@@ -1526,6 +1562,8 @@ class BCFWsolve{
 		//uni_search
 		Int split_up_rate;
 		Int speed_up_rate;
+		//l1 norm of each feature vector
+		Float* l1_norm;
 
 		bool do_subSolve;		
 
