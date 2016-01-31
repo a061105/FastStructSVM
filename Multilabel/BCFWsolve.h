@@ -15,7 +15,6 @@ class BCFWsolve{
 
 		BCFWsolve(Param* param){
 
-			cout.precision(10);
 			//Parse info from ChainProblem
 			prob = param->prob;
 			heldout_prob = param->heldout_prob;
@@ -223,7 +222,7 @@ class BCFWsolve{
 					is_ever_active[n][*it_label] = true;
 				}
 			}
-		
+
 			for (Int n = 0; n < N; n++){
 				Instance* ins = data->at(n);
 				for (Labels::iterator it_label = ins->labels.begin(); it_label != ins->labels.end(); it_label++){
@@ -238,16 +237,6 @@ class BCFWsolve{
 					}
 				}
 			}
-			/*for (Int n = 0; n < N; n++){
-				for (Int i = 0; i < K; i++){
-					for (Int j = i+1; j < K; j++){
-						Int offset = K*i+j;
-						Float* temp_float = new Float[4];
-						memset(temp_float, 0.0, sizeof(Float)*4);
-						act_beta[n].push_back(make_pair(offset, temp_float));
-					}
-				}
-			}*/
 				
 			Float p_inf;
 			Float alpha_nnz = 0.0;
@@ -653,92 +642,6 @@ class BCFWsolve{
 			clean_mu_n(n);
 		}
 
-		Float calc_d_obj(Int n, Float* alpha_new, Float gamma){
-			Instance* ins = data->at(n);
-			for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
-				Int j = it->first;
-				Float fval = it->second;
-				Float* wj = w[j];
-				for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
-					Int k = it_alpha->first;
-					Float delta_alpha = gamma * (alpha_new[k] - it_alpha->second);
-					wj[k] += fval * delta_alpha;
-				}
-			}
-
-			Float* temp_wx = new Float[K];
-			memset(temp_wx, 0.0, sizeof(Float)*K);
-			for (Int k = 0; k < K; k++){
-				for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
-					Int j = it->first;
-					Float fval = it->second;
-					temp_wx[k] += w[j][k] * fval;
-				}
-			}
-			//cout << "temp_wx=" << temp_wx[0] << " " << temp_wx[1] << endl;
-
-			//update and shrink alpha
-			bool* is_ever_active_n = is_ever_active[n];
-			Float* temp = new Float[K];
-			for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
-				Int k = it_alpha->first;
-				temp[k] = it_alpha->second;
-				it_alpha->second += gamma * (alpha_new[k] - temp[k]);
-			}
-			
-			for (Int j = 0; j < D; j++){
-				for (Int k = 0; k < K; k++){
-				//	cout << w[j][k] << " ";
-				}
-				//cout << endl;
-			}
-
-			//cout << "alpha:" << endl;
-			for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
-				Int k = it_alpha->first;
-			//	cout << k << " " << it_alpha->second << endl;
-			}
-			/*
-			for(vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
-				Int k1k2 = it_b->first;
-				cout << k1k2 ;
-				cout << " " << it_b->second[0];
-				cout << " " << it_b->second[1];
-				cout << " " << it_b->second[2];
-				cout << " " << it_b->second[3];
-				cout << endl;
-			}
-			
-			
-
-			cache_mu_n(n);
-			
-			cout << "mu=" << mu_n[1][0] << " " << mu_n[1][1] << endl;
-
-			clean_mu_n(n);
-			*/
-			Float d_obj = dual_obj();
-			
-			for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
-				Int k = it_alpha->first;
-				it_alpha->second = temp[k];
-			}
-			delete[] temp;
-
-			for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
-				Int j = it->first;
-				Float fval = it->second;
-				Float* wj = w[j];
-				for(PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
-					Int k = it_alpha->first;
-					Float delta_alpha = gamma * (alpha_new[k] - it_alpha->second);
-					wj[k] -= fval * delta_alpha;
-				}
-			}
-
-			return d_obj;		
-		}
-
 		void uni_update(Int n, Float* alpha_new, Int iter){ //solve n-th unigram factor
 
 			Instance* ins = data->at(n);
@@ -747,7 +650,7 @@ class BCFWsolve{
 			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
 			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
 			//memset(alpha_n, 0.0, sizeof(Float)*K);
-			memset(grad, 0.0, sizeof(Float)*K);
+			//memset(grad, 0.0, sizeof(Float)*K);
 			for (PairVec::iterator it_alpha = act_alpha_n->begin(); it_alpha != act_alpha_n->end(); it_alpha++){
 				alpha_n[it_alpha->first] = it_alpha->second;
 			}
@@ -778,7 +681,6 @@ class BCFWsolve{
 					grad[k] += -1.0;
 			}
 		
-			//cout << "grad=" << grad[0] << " " << grad[1] << endl;	
 			Float msg_L, msg_R;
 			for (vector<Int>::iterator it_alpha = ever_act_alpha_n->begin(); it_alpha != ever_act_alpha_n->end(); it_alpha++){
 				Int ii = *it_alpha;
@@ -798,24 +700,17 @@ class BCFWsolve{
 					if (inside[offset]){
 						msg_L = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][F_LEFT];
 						msg_R = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][F_RIGHT];
-						//cout << mu_n[offset][F_LEFT] << " " << mu_n[offset][F_RIGHT] << endl;
 					} else {
 						Float beta_nij01, beta_nij10;
 						recover_beta(n, i, j, alpha_n, mu_n, beta_nij10, beta_nij01);
 						msg_L = beta_nij10 - alpha_n[i] + mu_n[offset][F_LEFT];
 						msg_R = beta_nij01 - alpha_n[j] + mu_n[offset][F_RIGHT];
 					}
-					//cout << "L: " << eta * msg_L << ", R:" << eta * msg_R << endl;
 					grad[i] -= eta * msg_L;
 					grad[j] -= eta * msg_R;
 				}
 			}
-			/*
-			cout << "beta_n=" << beta_n[1][0] << " " << beta_n[1][1] << endl;
-			cout << "beta_n=" << beta_n[1][2] << " " << beta_n[1][3] << endl;
-			cout << "alpha_n=" << alpha_n[0] << " " << alpha_n[1] << endl;
-			cout << "grad=" << grad[0] << " " << grad[1] << endl;	
-			*/
+			
 			for (vector<pair<Int, Float*>>::iterator it_b = act_beta[n].begin(); it_b != act_beta[n].end(); it_b++){
 				Int offset = it_b->first;
 				Int i = offset / K, j = offset % K;
@@ -854,29 +749,12 @@ class BCFWsolve{
 				down += (Qii) * delta_alpha * delta_alpha;
 			}
 
-			//cout << "up=" << up << ", down=" << down << endl;
 			if (fabs(down) > 1e-12)
 				gamma = up / down;
 			if (gamma > 1.0)
 				gamma = 1.0;
 			if (gamma < 0.0)
 				gamma = 0.0;
-			
-			/*Float d_obj = dual_obj();
-			Float d_obj2 = calc_d_obj(n, alpha_new, 2.0 / (iter + 4.0));
-			Float d_obj1 = calc_d_obj(n, alpha_new, gamma);
-			if (d_obj1 > d_obj2 + 1e-12){
-				for (PairVec::iterator it_a = act_alpha_n->begin(); it_a != act_alpha_n->end(); it_a++){
-					Int k = it_a->first;
-					cout << is_pos_label_n[k] << ", Qii=" << Qii << ", grad[k]=" << grad[k];
-					cout << ", alpha_new[k]=" << alpha_new[k];
-					cout << ", alpha_nk=" << it_a->second << endl;
-				}
-				cout << "gamma=" << gamma << ", d_obj=" << d_obj << endl;
-				cout << "d_obj1=" << (d_obj1 - d_obj) << ", d_obj2=" << (d_obj2 - d_obj) << endl;
-			}
-			assert(d_obj1 <= d_obj2 + 1e-12);
-			*/
 			
 			//compute alpha new
 			for (PairVec::iterator it_a = act_alpha_n->begin(); it_a != act_alpha_n->end(); it_a++){
@@ -1008,7 +886,6 @@ class BCFWsolve{
 			//data
 			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
 
-			memset(alpha_n, 0.0, sizeof(Float)*K);
 			for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
 				alpha_n[it_alpha->first] = it_alpha->second;
 			}
@@ -1067,78 +944,10 @@ class BCFWsolve{
 					if (gamma < 0.0) gamma = 0.0;
 					if (gamma > 1.0) gamma = 1.0;
 
-					/*Float* delta_beta = new Float[4];
-					Float d_obj = dual_obj();
-					for (Int d = 0; d < 4; d++){
-						delta_beta[d] = (beta_new[offset][d] - beta_nij[d]);
-						beta_nij[d] += delta_beta[d] * gamma;
-						cout << d_obj << " " << (delta_beta[d] * gamma) << " " << dual_obj() << endl;
-					}
-					v[i][j] += delta_beta[3] * gamma;
-					Float d_obj_after = dual_obj();
-					if (d_obj_after > d_obj){
-						cout << "gamma=" << gamma << endl;
-						cout << "pos_bits=" << pos_bits << endl;
-						cout << "max_neg_bits=" << max_neg_bits << endl;
-						cout << "grad: ";
-						for (Int d = 0; d < 4; d++){
-							cout << grad[d] << " ";
-						}
-						cout << endl;
-						cout << "delta_beta: ";
-						for (Int d = 0; d < 4; d++){
-							cout << delta_beta[d] << " ";
-						}
-						cout << endl;
-						cout << "objs:" << d_obj_after << " " << d_obj << endl;
-						cout << beta_new[offset][pos_bits] << " " << beta_nij[pos_bits] << endl;
-						cout << beta_new[offset][max_neg_bits] << " " << beta_nij[max_neg_bits] << endl;
-					}
-					assert(d_obj_after <= d_obj);
-					v[i][j] -= delta_beta[3] * gamma;
-					for (Int d = 0; d < 4; d++)
-						beta_nij[d] -= delta_beta[d] * gamma;
-					delete[] delta_beta;
-					*/
 					//record beta new values
 					for (int d=0;d<4;d++)
 						beta_new[offset][d] = beta_nij[d] + gamma * (beta_new[offset][d] - beta_nij[d]);
 					
-					for (int d=0;d<4;d++){
-						if ( d != pos_bits){
-							if (beta_new[offset][d] >= -C-1e-12 && beta_new[offset][d] <= 1e-12){
-				
-							} else {
-								cout << "gamma=" << gamma << endl;
-								cout << "pos_bits=" << pos_bits << endl;
-								cout << "max_neg_bits=" << max_neg_bits << endl;
-								cout << "grad: ";
-								for (Int d = 0; d < 4; d++){
-									cout << grad[d] << " ";
-								}
-								cout << endl;
-								//cout << "objs:" << d_obj_after << " " << d_obj << endl;
-								cout << beta_new[offset][d] << " " << beta_nij[d] << endl;
-							}
-							assert(beta_new[offset][d] >= -C-1e-12 && beta_new[offset][d] <= 1e-12);
-						} else {
-							if (beta_new[offset][d] <= C+1e-12 && beta_new[offset][d] >= -1e-12){
-				
-							} else {
-								cout << "gamma=" << gamma << endl;
-								cout << "pos_bits=" << pos_bits << endl;
-								cout << "max_neg_bits=" << max_neg_bits << endl;
-								cout << "grad: ";
-								for (Int d = 0; d < 4; d++){
-									cout << grad[d] << " ";
-								}
-								cout << endl;
-								//cout << "objs:" << d_obj_after << " " << d_obj << endl;
-								cout << beta_new[offset][d] << " " << beta_nij[d] << endl;
-							}
-							assert(beta_new[offset][d] <= C+1e-12 && beta_new[offset][d] >= -1e-12);
-						}
-					}
 			}
 			
 			for (PairVec::iterator it_alpha = act_alpha[n].begin(); it_alpha != act_alpha[n].end(); it_alpha++){
@@ -1578,18 +1387,15 @@ class BCFWsolve{
 						}
 						Int offset = K*i+j;
 						if (inside[offset]){
-							//cout << "uni subsolve: before mu, offset=" << offset << endl;
 							Float delta_mu_l = beta_n[offset][2] + beta_n[offset][3] - alpha_n[i] + mu_n[offset][0];
 							Float delta_mu_r = beta_n[offset][1] + beta_n[offset][3] - alpha_n[j] + mu_n[offset][1];
 							p_inf += delta_mu_l * delta_mu_l;
 							p_inf += delta_mu_r * delta_mu_r;
 						} else {
 							
-							//cout << "bi search: before mu, offset=" << offset << ", i=" << i << ", j=" << j << endl;
 							Float tmp_L = alpha_n[i] - mu_n[offset][F_LEFT];
 							Float tmp_R = alpha_n[j] - mu_n[offset][F_RIGHT];
 							Float beta_nij01 = 0.0, beta_nij10 = 0.0;
-							//cout << "bi search: after mu" << endl;
 
 							//shouldn't have both positive here
 							if (is_pos_label_n[i]){
@@ -1638,10 +1444,6 @@ class BCFWsolve{
 				clean_mu_n(n);
 			}
 			p_inf *= eta/2.0;
-				
-			cout << "u_obj=" << u_obj << endl;		
-			cout << "bi_obj=" << bi_obj << endl;		
-			cout << "p_inf=" << p_inf << endl;		
 	
 			return u_obj + bi_obj + p_inf;
 		}
