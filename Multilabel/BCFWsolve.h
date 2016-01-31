@@ -87,7 +87,7 @@ class BCFWsolve{
 			Q_diag = new Float[N];
 			for(Int n=0;n<N;n++){
 				Instance* ins = data->at(n);
-				Q_diag[n] = (K-1)*eta; //there are K-1 consistency constraints associated with alpha_i
+				Q_diag[n] = 0.0; //there are K-1 consistency constraints associated with alpha_i
 				for(SparseVec::iterator it=ins->feature.begin(); it!=ins->feature.end(); it++){
 					Q_diag[n] += it->second * it->second;
 				}
@@ -569,7 +569,7 @@ class BCFWsolve{
 		void uni_subSolve(Int n, Float* alpha_new){ //solve n-th unigram factor
 
 			Instance* ins = data->at(n);
-			Float Qii = Q_diag[n];
+			Float Qii = Q_diag[n] + (ever_act_alpha[n].size()-1) * eta;
 			PairVec* act_alpha_n = &(act_alpha[n]);
 			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
 			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
@@ -673,7 +673,7 @@ class BCFWsolve{
 		void uni_update(Int n, Float* alpha_new, Int iter){ //solve n-th unigram factor
 
 			Instance* ins = data->at(n);
-			Float Qii = Q_diag[n];
+			Float Qii = Q_diag[n] + (ever_act_alpha[n].size() - 1) * eta;
 			PairVec* act_alpha_n = &(act_alpha[n]);
 			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
 			vector<pair<Int, Float*>>* act_beta_n = &(act_beta[n]);
