@@ -17,6 +17,7 @@ void exit_with_help(){
 	cerr << "-q split_up_rate: choose 1/q fraction of [K]" << endl;
 	cerr << "-m max_iter: maximum number of iterations allowed (default 20)" << endl;
 	//cerr << "-i im_sampling: Importance sampling instead of uniform (default not)" << endl;
+	cerr << "-o heldout_period: period(#iters) to report heldout accuracy (default 10)" << endl;
 	//cerr << "-g max_select: maximum number of greedy-selected dual variables per sample (default 1)" << endl;
 	//cerr << "-p post_train_iter: #iter of post-training w/o L1R (default 0)" << endl;
 	cerr << "-h heldout data set: use specified heldout data set" << endl;
@@ -70,6 +71,8 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 			case 't': param->eta = atof(argv[i]);
 				  break;
 			case 'u': param->do_subSolve = false; --i;
+				  break;
+			case 'o': param->heldout_period = atoi(argv[i]);
 				  break;
 			default:
 				  cerr << "unknown option: -" << argv[i-1][1] << endl;

@@ -409,6 +409,7 @@ class Param{
 	int early_terminate;
 	Float admm_step_size;
 	bool do_subSolve;
+	Int heldout_period;
 	Param(){
 		solver = 0;
 		C = 1.0;
@@ -421,6 +422,7 @@ class Param{
 		early_terminate = 3;
 		admm_step_size = 1.0;
 		do_subSolve = true;
+		heldout_period = 10;
 	}
 };
 

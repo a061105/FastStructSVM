@@ -17,6 +17,7 @@ class BCFWsolve{
 		//Parse info from ChainProblem
 		using_brute_force = param->using_brute_force;
 		do_subSolve = param->do_subSolve;
+		heldout_period = param->heldout_period;
 		split_up_rate = param->split_up_rate;
 		prob = param->prob;
 		heldout_prob = param->heldout_prob;
@@ -301,7 +302,7 @@ class BCFWsolve{
 				if (do_subSolve){
 					uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
 				} else {
-					uni_update(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
+					uni_update(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node, iter);
 				}
 				uni_subSolve_time += get_current_time();
 				//maIntain relationship between w and alpha
@@ -534,7 +535,7 @@ class BCFWsolve{
 				model->writeModel(name);
 				overall_time -= get_current_time();
 			}
-			if ((iter+1) % 1 == 0 && heldout_prob != NULL){
+			if ((iter+1) % heldout_period == 0 && heldout_prob != NULL){
 				overall_time += get_current_time();
 				Model* model = new Model(w, v, prob);
 				Float heldout_test_acc = model->calcAcc_Viterbi(heldout_prob);
@@ -587,7 +588,7 @@ class BCFWsolve{
 
 	private:
 
-	void uni_update(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node){
+	void uni_update(Int i, Int n, Int t, Int il, Int ir, vector<pair<Int, Float>>& act_uni_index, Float* alpha_new, Float loss_per_node, Int iter){
 		
 		//data
 		Seq* seq = data->at(n);
@@ -648,17 +649,20 @@ class BCFWsolve{
 		//compute gamma
 		Float gamma = 0.0;
 		Float up = 0.0, down = 0.0;
+		Int ind = 0;
 		for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
 			Int k = it_a->first;
 			down += (Qii + 2*eta) * (alpha_new[k] - it_a->second) * (alpha_new[k] - it_a->second);
-			for(SparseVec::iterator itt=xi->begin(); itt!=xi->end(); itt++){
+			/*for(SparseVec::iterator itt=xi->begin(); itt!=xi->end(); itt++){
 				Int f_ind = itt->first;
 				Float f_val = itt->second;
 				up += (it_a->second-alpha_new[k]) * w[ f_ind ][k] * f_val;
 			}
 			if (k != yi)
 				up += (it_a->second - alpha_new[k]) * loss_per_node;
-			up -= eta * (msg_to_right[k] + msg_to_left[k]) * (it_a->second - alpha_new[k]);
+			up -= eta * (msg_to_right[k] + msg_to_left[k]) * (it_a->second - alpha_new[k]);*/
+			up -= prod[ind] * (alpha_new[k] - it_a->second);
+			ind++;
 		}
 		if (fabs(down) > 1e-12)
 			gamma = up / down;
@@ -668,7 +672,8 @@ class BCFWsolve{
 			gamma = 0.0;
 		if (gamma > 1.0)
 			gamma = 1.0;
-		
+		//gamma = 2.0 / (iter + 4.0);
+	
 		for (vector<pair<Int, Float>>::iterator it_a = act_uni_index.begin(); it_a != act_uni_index.end(); it_a++){
 			Int k = it_a->first;
 			alpha_new[k] = gamma * alpha_new[k] + (1-gamma)*it_a->second;
@@ -809,11 +814,8 @@ class BCFWsolve{
 		max_indices[0] = range_l;
 		for (Int k = range_l; k < range_r; k++){
 			prod[k] -= eta*(msg_to_right[k] + msg_to_left[k]);
-			if (prod[k] > prod[max_indices[0]]){
-				max_indices[0] = k;
-			}
 		}
-		//prod[yi] = -INFI;
+
 		Float th = -1.0/seq->T;
 		for (SparseVec::iterator it = xi->begin(); it != xi->end(); it++){
 			Float xij = it->second;
@@ -821,11 +823,16 @@ class BCFWsolve{
 			Float* wj = w[j];
 			for (int k = range_l; k < range_r; k++){
 				prod[k] += wj[k] * xij;
-				if (prod[k] > prod[max_indices[0]]){
-					max_indices[0] = k;
-				}
 			}
 		}
+		
+		max_indices[0] = range_l;
+		for (Int k = range_l; k < range_r; k++){
+			if (prod[k] > prod[max_indices[0]]){
+				max_indices[0] = k;
+			}
+		}
+
 		if (prod[max_indices[0]] > th){
 			act_k_index.push_back(make_pair(max_indices[0], 0.0));
 		}
@@ -1374,6 +1381,7 @@ class BCFWsolve{
 	ChainProblem* heldout_prob;
 	//if heldout test accuracy doesn't increase in a few iterations, stop!
 	Int early_terminate;
+	Int heldout_period;
 
 	//uni_search
 	Int* max_indices;
