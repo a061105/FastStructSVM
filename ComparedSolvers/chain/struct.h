@@ -115,7 +115,7 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 		double wbar_val = model->w[i] * lambda_bar;
 		reg_term += wbar_val*wbar_val;
 	}
-	reg_term *= lambda_bar/2.0;
+	reg_term /= (2.0 * lambda_bar);
 	
 	delete ystar;
 	delete phi_i;
