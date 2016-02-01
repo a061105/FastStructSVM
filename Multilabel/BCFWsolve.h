@@ -835,7 +835,6 @@ class BCFWsolve{
 			cache_mu_n(n);
 			bool* inside_a = new bool[K];
 			memset(inside_a, false, sizeof(bool)*K);
-			
 			for (PairVec::iterator it_a = act_alpha_n.begin(); it_a != act_alpha_n.end(); it_a++){
 				Int k = it_a->first;
 				alpha_n[k] = it_a->second;
@@ -847,11 +846,11 @@ class BCFWsolve{
 				inside[offset] = true;
 				beta_n[offset] = it_b->second;
 			}
-		
+	
 			vector<Float>::iterator current_index = rand_nums.begin();
 			Float current_sum = 0.0;
-			for (SparseVec::iterator it = ins->feature.begin(); it != ins->feature.end() && current_index != rand_nums.end(); current_index++, it++){
-				current_sum += it->second;
+			for (SparseVec::iterator it = ins->feature.begin(); it != ins->feature.end() && current_index != rand_nums.end(); it++){
+				current_sum += fabs(it->second);
 				if (current_sum < (*current_index)){
 					continue;
 				}
@@ -868,6 +867,7 @@ class BCFWsolve{
 					prod[k] += wj[k]*xij;
 				}
 			}
+			
 			
 			vector<Int>* ever_act_alpha_n = &(ever_act_alpha[n]);
 			bool* is_pos_label_n = is_pos_label[n];

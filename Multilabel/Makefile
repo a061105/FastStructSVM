@@ -38,9 +38,9 @@ yeast:
 	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 rcv1_regions:
-	$(eval train_file := $(data_dir)/rcv1_regions_$(scale).svm)
+	$(eval train_file := $(data_dir)/rcv1_regions.train)
 	$(eval test_file := $(data_dir)/rcv1_regions_test.03k)
-	./train -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
+	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 Eur-Lex:
 	$(eval train_file := $(data_dir)/Eur-Lex.$(scale))
