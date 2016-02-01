@@ -468,8 +468,18 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 	Int D = param->prob->D;
 	Int N = param->prob->N;
 
-	for(Int n=i_start; n<i_end; n++){
+	Int total = i_end - i_start;
+	Int m = 100;
+	if (m > total)
+		m = total;
+	vector<Int> indices;
+	for(Int i = i_start; i < i_end; i++){
+		indices.push_back(i);
+	}
+	random_shuffle(indices.begin(), indices.end());
+	for(Int mm = 0; mm < m; mm++){
 		
+		Int n = indices[mm];
 		Instance* ins = data->at(n);
 		Labels* labels = &(ins->labels);
 		labelToFracLabel( param, labels, yn );
@@ -513,6 +523,7 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 		
 		loss_term += dot(phi_star, w, v, D, K) - dot(phi_n, w, v, D, K) + multilabel_loss(param, labels, ystar);
 	}
+	loss_term *= ((Float)total*1.0/m);
 	
 	double reg_term = 0.0;
 	//lambda = 1.0/C

@@ -33,8 +33,8 @@ bibtex:
 	./train -s $(s) -m 10000 $(data_dir)/multilabel/bibtex.$(scale)
 
 yeast:
-	$(eval train_file := $(data_dir)/yeast_$(scale).tmp)
-	$(eval test_file := $(data_dir)/yeast_subtrain.tmp)
+	$(eval train_file := $(data_dir)/yeast_$(scale).svm)
+	$(eval test_file := $(data_dir)/yeast_test.svm)
 	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
 
 rcv1_regions:
