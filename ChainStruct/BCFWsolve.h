@@ -15,6 +15,7 @@ class BCFWsolve{
 	BCFWsolve(Param* param){
 		
 		//Parse info from ChainProblem
+		par = param;
 		using_brute_force = param->using_brute_force;
 		do_subSolve = param->do_subSolve;
 		heldout_period = param->heldout_period;
@@ -129,6 +130,7 @@ class BCFWsolve{
 			row_heap_size[k] = K;
 			col_heap_size[k] = K;
 		}
+		model = new Model(w, v, prob);
 		v_heap_size = K*K;
 		
 		//allocating Lagrangian Multipliers for consistency constraInts
@@ -527,6 +529,7 @@ class BCFWsolve{
 			cerr << ", admm_maintain=" << admm_maintain_time ;
 			cerr << ", area1=" << (double)submat_top/submat_bottom << ", area23=" << (double)line_top/line_bottom << ", area4=" << (double)mat_top/mat_bottom;
 			cerr << ", dual_obj=" << dual_obj();
+			cerr << ", p_obj=" << primal_obj(par, 0, nSeq, model);
 			if ((iter+1) % write_model_period == 0){
 				overall_time += get_current_time();
 				Model* model = new Model(w, v, prob);
@@ -1341,6 +1344,9 @@ class BCFWsolve{
 	}
 
 	ChainProblem* prob;
+	
+	Param* par;
+	Model* model;
 	
 	vector<Seq*>* data;
 	Float C;

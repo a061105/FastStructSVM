@@ -5,7 +5,7 @@
 class Seq{
 	public:
 	vector<SparseVec*> features;
-	vector<Int> labels;
+	Labels labels;
        	Int T;
 };
 
@@ -425,5 +425,170 @@ class Param{
 		heldout_period = 10;
 	}
 };
+
+
+void chain_logDecode(double* nodePot, double* edgePot, int num_vars, int num_states, Labels* y_decode){
+	
+	double** max_marg = new double*[num_vars];
+	int** argmax = new int*[num_vars];
+	for(int i=0;i<num_vars;i++){
+		max_marg[i] = new double[num_states];
+		argmax[i] = new int[num_states];
+		for(int j=0;j<num_states;j++){
+			max_marg[i][j] = -1e300;
+			argmax[i][j] = -1;
+		}
+	}
+	
+	//initialize
+	for(int i=0;i<num_states;i++)
+		max_marg[0][i] = nodePot[0*num_states+i];
+	//forward pass
+	for(int t=1;t<num_vars;t++){
+		for(int i=0;i<num_states;i++){
+			int ind = i*num_states;
+			for(int j=0;j<num_states;j++){
+				double new_val =  max_marg[t-1][i] + edgePot[ind+j];
+				if( new_val > max_marg[t][j] ){
+					max_marg[t][j] = new_val;
+					argmax[t][j] = i;
+				}
+			}
+		}
+		for(int i=0;i<num_states;i++)
+			max_marg[t][i] += nodePot[t*num_states+i];
+	}
+	//backward pass to find the ystar	
+	y_decode->clear();
+	y_decode->resize(num_vars);
+	
+	double max_val = -1e300;
+	for(int i=0;i<num_states;i++){
+		if( max_marg[num_vars-1][i] > max_val ){
+			max_val = max_marg[num_vars-1][i];
+			(*y_decode)[num_vars-1] = i;
+		}
+	}
+	for(int t=num_vars-2;t>=0;t--){
+		(*y_decode)[t] = argmax[t+1][ (*y_decode)[t+1] ];
+	}
+	
+	for(int t=0;t<num_vars;t++)
+		delete[] max_marg[t];
+	delete[] max_marg;
+
+	for(int t=0;t<num_vars;t++)
+		delete[] argmax[t];
+	delete[] argmax;
+}
+
+void chain_oracle(Param* param, Model* model, Seq* seq, Labels* y, Labels* ystar){
+	
+	Int T = seq->T;
+	Int D = param->prob->D;
+	Int K = param->prob->K;
+	
+	double* theta_unary = new double[T*K];
+	double* theta_pair = new double[K*K];
+	Float** w = model->w;
+	Float** v = model->v;
+
+	for(int t=0; t<T; t++){
+		SparseVec* x_t = seq->features[t];
+		int tK = t*K;
+		
+		for(int k=0; k<K; k++)
+			theta_unary[tK+k] = 0.0;
+		for( SparseVec::iterator it=x_t->begin(); it!=x_t->end(); it++){
+			Int j = it->first;
+			double xt_j = it->second;
+			for(int k=0; k<K; k++){
+				theta_unary[tK + k] += w[j][k] * xt_j;
+			}
+		}
+	}
+	int bigram_offset = D*K;
+	for(int k1k2=0; k1k2<K*K; k1k2++){
+		Int k1= k1k2 / K, k2 = k1k2 % K;
+		theta_pair[k1k2] = v[k1][k2];
+	}
+	
+	//loss augmented
+	if( y != NULL ){
+		for(int t=0; t<T; t++){
+			for(int k=0; k<K; k++){
+				if( k != y->at(t) )
+					theta_unary[ t*K +k ] += 1.0/T;
+			}
+		}
+	}
+	
+	// decode
+	chain_logDecode(theta_unary, theta_pair, T, K, ystar);
+	
+	delete[] theta_unary;
+	delete[] theta_pair;
+}
+
+double primal_obj( Param* param, int i_start, int i_end,  Model* model){
+	
+	vector<Seq*>* data = &(param->prob->data);
+
+	Int N = param->prob->N;
+	Int D = param->prob->D;
+	Int K = param->prob->K;
+	Float** w = model->w;
+	Float** v = model->v;
+
+	Labels* ystar = new Labels();
+	double loss_term = 0.0;
+	for(int i=i_start;i<i_end;i++){
+	
+		Seq* seq = data->at(i);
+		Labels* labels = &(seq->labels);
+		chain_oracle(param, model, seq, NULL, ystar);
+		Int T = labels->size();
+
+		for (Int t = 0; t < T; t++){
+			Int ystar_t = ystar->at(t), yn_t = labels->at(t);
+			SparseVec* x_t = seq->features[t];
+			for (SparseVec::iterator it_x = x_t->begin(); it_x != x_t->end(); it_x++){
+				Int j = it_x->first;
+				Int xij = it_x->second;
+				loss_term += (w[j][ystar_t] - w[j][yn_t]) * xij;
+			}
+		}
+		for (Int t = 0; t < T - 1; t++){
+			loss_term += v[labels->at(t)][labels->at(t+1)];
+			loss_term -= v[ystar->at(t)][ystar->at(t+1)];
+		}
+
+		for (Int t = 0; t < T; t++){
+			if (labels->at(t) != ystar->at(t)){
+				loss_term += 1.0/T;
+			}
+		}
+	}
+	
+	double reg_term = 0.0;
+	//lambda = 1.0/C
+	for(int j = 0; j < D; j++){
+		for (Int k = 0; k < K; k++){
+			double wbar_val = w[j][k];
+			reg_term += wbar_val*wbar_val;
+		}
+	}
+	for(int k1 = 0; k1 < K; k1++){
+		for (Int k2 = 0; k2 < K; k2++){
+			double wbar_val = v[k1][k2];
+			reg_term += wbar_val*wbar_val;
+		}
+	}
+	reg_term /= (2*param->C);
+	loss_term /= param->C;
+	delete ystar;
+	
+	return reg_term + loss_term;
+}
 
 #endif 
