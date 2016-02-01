@@ -19,6 +19,7 @@ typedef double Float;
 typedef int Int;
 typedef vector<pair<Int,Float> > SparseVec;
 typedef vector<Int> Labels;
+typedef vector<pair<Int,double> > FracLabel;
 typedef pair<Float, Int>* ArrayHeap;
 const Int LINE_LEN = 100000000;
 const Int FNAME_LEN = 1000;
