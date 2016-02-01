@@ -119,8 +119,18 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 	SparseVect* phi_star = new SparseVect();
 	SparseVect* psi_i = new SparseVect();
 	double loss_term = 0.0;
-	for(Int i=i_start;i<i_end;i++){
+	Int total = i_end - i_start;
+	Int m = 100;
+	if (m > total)
+		m = total;
+	vector<Int> indices;
+	for(Int i = i_start; i < i_end; i++){
+		indices.push_back(i);
+	}
+	random_shuffle(indices.begin(), indices.end());
+	for(Int mm = 0; mm < m; mm++){
 		
+		Int i = indices[mm];
 		Instance* ins = data->at(i);
 		Label* label = labels->at(i);
 		labelToFracLabel( param, label, yi );
@@ -147,6 +157,7 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 		}*/
 		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar);
 	}
+	loss_term *= ((Float)total*1.0/m);
 	
 	double reg_term = 0.0;
 	double lambda_bar = param->lambda*param->n_train;
@@ -160,7 +171,6 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 	delete phi_i;
 	delete phi_star;
 	delete psi_i;
-	
 	return reg_term + loss_term;
 }
 
