@@ -100,30 +100,35 @@ double primal_obj( Param* param, int i_start, int i_end, int n_sample,  Model* m
 	int m = n_sample;
 	if( m > i_end-i_start )
 		m = i_end-i_start;
+	vector<int> index;
+	for(int i=i_start;i<i_end;i++)
+		index.push_back(i);
+	random_shuffle(index.begin(), index.end());
+	
 	double loss_term = 0.0;
 	for(int r=0;r<m;r++){
-		
-		int i = rand()%(i_end-i_start) + i_start;
+	//for(int i=i_start;i<i_end;i++){
+		int i = index[r];
 
 		Instance* ins = data->at(i);
 		Label* label = labels->at(i);
 
-		param->oracleFunc(param, model, ins, NULL, i, ystar);
+		param->oracleFunc(param, model, ins, label, i, ystar);
 		param->featuremapFunc(param, ins, label,   phi_i);
 		param->featuremapFunc(param, ins, ystar,   phi_star);
 		
 		//loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar)/labels->size();
 		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar);
 	}
-	loss_term *= ((double)(i_end-i_start))/m;
+	//loss_term *= ((double)(i_end-i_start))/m;
 	
 	double reg_term = 0.0;
 	double lambda_bar = param->lambda*param->n_train;
 	for(int i=0; i<model->d; i++){
-		double wbar_val = model->w[i] * lambda_bar;
+		double wbar_val = model->w[i];
 		reg_term += wbar_val*wbar_val;
 	}
-	reg_term /= (2.0 * lambda_bar);
+	reg_term /= 2.0;
 	
 	delete ystar;
 	delete phi_i;
