@@ -136,7 +136,7 @@ double primal_obj( Param* param, Int i_start, Int i_end, Int n_sample, Model* mo
 		Label* label = labels->at(i);
 		labelToFracLabel( param, label, yi );
 
-		param->oracleFunc(param, model, ins, NULL, i, ystar);
+		param->oracleFunc(param, model, ins, label, i, ystar);
 		param->featuremapFunc(param, ins, yi,      phi_i);
 		param->featuremapFunc(param, ins, ystar,   phi_star);
 		
