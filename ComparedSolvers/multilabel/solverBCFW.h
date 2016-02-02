@@ -131,7 +131,7 @@ Model* solverBCFW(Param* param, Option* options){
 				testPred_time += omp_get_wtime();
 				
 				double d_obj = dual_obj(param, model_debug->w, loss_term);
-				double p_obj = primal_obj(param, 0, n_train, model_debug);
+				double p_obj = primal_obj(param, 0, n_train, n_test, model_debug);
 				
 				minus_time += omp_get_wtime();
 				double end = omp_get_wtime();

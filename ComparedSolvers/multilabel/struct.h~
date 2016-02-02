@@ -120,7 +120,6 @@ double primal_obj( Param* param, Int i_start, Int i_end, Int n_sample, Model* mo
 	SparseVect* psi_i = new SparseVect();
 	double loss_term = 0.0;
 	Int total = i_end - i_start;
-	
 	Int m = n_sample;
 	if (m > total)
 		m = total;
