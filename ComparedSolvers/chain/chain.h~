@@ -124,8 +124,8 @@ void chain_oracle(Param* param, Model* model, Instance* ins, Label* y, int ins_i
 		for(int i=0;i<num_vars;i++){
 			for(int j=0;j<num_states;j++){
 				if( j != y->at(i) )
-					//theta_unary[ i*num_states +j ] += 1.0/num_vars;
-					theta_unary[ i*num_states +j ] += 1.0;
+					theta_unary[ i*num_states +j ] += 1.0/num_vars;
+					//theta_unary[ i*num_states +j ] += 1.0;
 			}
 		}
 	}

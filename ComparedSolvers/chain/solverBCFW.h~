@@ -90,7 +90,8 @@ Model* solverBCFW(Param* param, Option* options){
 			sv_add( scalar, phi_i, -scalar, phi_star, psi_i);
 			
 			//compute line-search step
-			double loss_s = chain_loss( param, label, ystar_i)/(n_train*label->size());
+			//double loss_s = chain_loss( param, label, ystar_i)/(n_train*label->size());
+			double loss_s = chain_loss( param, label, ystar_i)/(n_train);
 			//gamma = (double)(2.0*n_train)/(k+2.0*n_train);
 			double gamma_denom = 
 				dot( w_arr+i, w_arr+i )+dot(psi_i,psi_i)-2.0*dot(w_arr+i, psi_i);
@@ -121,7 +122,7 @@ Model* solverBCFW(Param* param, Option* options){
 				}
 			}
 			
-			if( k % 100 == 0 ){
+			if( k % n_test == 0 ){
 				minus_time -= omp_get_wtime();
 
 				double testPred_time = -omp_get_wtime();
@@ -129,7 +130,7 @@ Model* solverBCFW(Param* param, Option* options){
 				testPred_time += omp_get_wtime();
 				
 				double d_obj = dual_obj(param, model_debug->w, loss_term);
-				double p_obj = primal_obj(param, 0, n_train, model_debug);
+				double p_obj = primal_obj(param, 0, n_train, n_test, model_debug);
 				
 				minus_time += omp_get_wtime();
 				double end = omp_get_wtime();
@@ -151,6 +152,6 @@ Model* solverBCFW(Param* param, Option* options){
 	delete phi_i;
 	delete phi_star;
 	delete psi_i;
-	
+	delete[] loss_arr;
 	return model;
 }

@@ -86,7 +86,7 @@ double average_loss( Param* param, int i_start, int i_end, vector<Instance*>* da
 	return loss_term/num_pred_vars;
 }
 
-double primal_obj( Param* param, int i_start, int i_end,  Model* model){
+double primal_obj( Param* param, int i_start, int i_end, int n_sample,  Model* model){
 	
 	double (*loss)(Param*,Label*,Label*) = param->loss;
 	vector<Instance*>* data = param->data;
@@ -96,9 +96,15 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 	SparseVect* phi_i = new SparseVect();
 	SparseVect* phi_star = new SparseVect();
 	SparseVect* psi_i = new SparseVect();
+
+	int m = n_sample;
+	if( m > i_end-i_start )
+		m = i_end-i_start;
 	double loss_term = 0.0;
-	for(int i=i_start;i<i_end;i++){
+	for(int r=0;r<m;r++){
 		
+		int i = rand()%(i_end-i_start) + i_start;
+
 		Instance* ins = data->at(i);
 		Label* label = labels->at(i);
 
@@ -106,8 +112,10 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 		param->featuremapFunc(param, ins, label,   phi_i);
 		param->featuremapFunc(param, ins, ystar,   phi_star);
 		
-		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar)/labels->size();
+		//loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar)/labels->size();
+		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar);
 	}
+	loss_term *= ((double)(i_end-i_start))/m;
 	
 	double reg_term = 0.0;
 	double lambda_bar = param->lambda*param->n_train;
