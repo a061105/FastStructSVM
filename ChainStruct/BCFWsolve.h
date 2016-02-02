@@ -529,7 +529,16 @@ class BCFWsolve{
 			cerr << ", admm_maintain=" << admm_maintain_time ;
 			cerr << ", area1=" << (double)submat_top/submat_bottom << ", area23=" << (double)line_top/line_bottom << ", area4=" << (double)mat_top/mat_bottom;
 			cerr << ", dual_obj=" << dual_obj();
-			cerr << ", p_obj=" << primal_obj(par, 0, nSeq, model);
+			if ((iter+1) % heldout_period == 0){
+				overall_time += get_current_time();
+				Int subsample = nSeq;
+				if (nSeq > 1000){
+					subsample = nSeq/10;
+				}
+				cerr << ", p_obj=" << primal_obj(par, nSeq, subsample, model);
+				overall_time -= get_current_time();
+			}
+			
 			if ((iter+1) % write_model_period == 0){
 				overall_time += get_current_time();
 				Model* model = new Model(w, v, prob);
@@ -564,7 +573,7 @@ class BCFWsolve{
 					}
 				}
 			}
-			cerr << endl;
+			cerr << ", overall time=" << (overall_time+get_current_time()) << endl;
 			//if( p_inf < 1e-4 )
 			//	break;
 			

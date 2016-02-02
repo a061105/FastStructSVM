@@ -530,7 +530,7 @@ void chain_oracle(Param* param, Model* model, Seq* seq, Labels* y, Labels* ystar
 	delete[] theta_pair;
 }
 
-double primal_obj( Param* param, int i_start, int i_end,  Model* model){
+double primal_obj( Param* param, int total, int subsample,  Model* model){
 	
 	vector<Seq*>* data = &(param->prob->data);
 
@@ -542,8 +542,16 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 
 	Labels* ystar = new Labels();
 	double loss_term = 0.0;
-	for(int i=i_start;i<i_end;i++){
-	
+	Int m = subsample;
+	if (m > total)
+		m = total;
+	vector<Int> indices;
+	for(Int i = 0; i < total; i++){
+		indices.push_back(i);
+	}
+	random_shuffle(indices.begin(), indices.end());
+	for(Int mm = 0; mm < m; mm++){
+		Int i = indices[mm];	
 		Seq* seq = data->at(i);
 		Labels* labels = &(seq->labels);
 		chain_oracle(param, model, seq, NULL, ystar);
@@ -569,6 +577,8 @@ double primal_obj( Param* param, int i_start, int i_end,  Model* model){
 			}
 		}
 	}
+
+	loss_term *= ((Float)total*1.0/m);
 	
 	double reg_term = 0.0;
 	//lambda = 1.0/C

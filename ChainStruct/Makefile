@@ -15,7 +15,7 @@ scale=train
 
 pos:
 	$(eval train_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.$(scale))
-	$(eval heldout_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.tmp)
+	$(eval heldout_file := /scratch/cluster/ianyen/data/POS/wsj.pos.crf.test)
 	$(eval model := model)
 	./train -s $(s) -t $(t) -c $(c) -q $(q) -a $(a) -m $(m) $(opt) -e $(e) -h $(heldout_file) $(train_file) $(model) 
 
