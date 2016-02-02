@@ -32,3 +32,5 @@ running SSG on 11954 examples...
 #pass=0-1300, test_acc=0.0541002, time=695.612, testPredTime=71.8389, p-obj=1.99041e+08
 
 #pass=0-1400, test_acc=0.0523918, time=760.309, testPredTime=74.1063, p-obj=1.82089e+08
+
+#pass=0-1500, test_acc=0.0535308, time=819.869, testPredTime=58.8832, p-obj=1.67456e+08
