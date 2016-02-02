@@ -518,7 +518,8 @@ void chain_oracle(Param* param, Model* model, Seq* seq, Labels* y, Labels* ystar
 		for(int t=0; t<T; t++){
 			for(int k=0; k<K; k++){
 				if( k != y->at(t) )
-					theta_unary[ t*K +k ] += 1.0/T;
+					//theta_unary[ t*K +k ] += 1.0/T;
+					theta_unary[ t*K +k ] += 1.0;
 			}
 		}
 	}
@@ -573,7 +574,8 @@ double primal_obj( Param* param, int total, int subsample,  Model* model){
 
 		for (Int t = 0; t < T; t++){
 			if (labels->at(t) != ystar->at(t)){
-				loss_term += 1.0/T;
+				//loss_term += 1.0/T;
+				loss_term += 1.0;
 			}
 		}
 	}

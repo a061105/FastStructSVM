@@ -299,7 +299,8 @@ class BCFWsolve{
 				
 				
 				//subproblem solving
-				Float loss_per_node = 1.0/seq->T;
+				//Float loss_per_node = 1.0/seq->T;
+				Float loss_per_node = 1.0;
 				uni_subSolve_time -= get_current_time();
 				if (do_subSolve){
 					uni_subSolve(i, n, t, il, ir, act_k_index[i], alpha_new, loss_per_node);
@@ -828,7 +829,8 @@ class BCFWsolve{
 			prod[k] -= eta*(msg_to_right[k] + msg_to_left[k]);
 		}
 
-		Float th = -1.0/seq->T;
+		//Float th = -1.0/seq->T;
+		Float th = -1.0;
 		for (SparseVec::iterator it = xi->begin(); it != xi->end(); it++){
 			Float xij = it->second;
 			Int j = it->first;
