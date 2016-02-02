@@ -34,3 +34,11 @@ running BCFW on 5991 examples...
 #pass=1-4355, test_acc=0.987413, time=29973.5, testPredTime=1180.99, d-obj=-1455.37, p-obj=12590.8
 
 #pass=1-5094, test_acc=0.987302, time=32263.6, testPredTime=874.77, d-obj=-1534.89, p-obj=14197.2
+
+#pass=1-5833, test_acc=0.987396, time=34084, testPredTime=861.766, d-obj=-1612.45, p-obj=16578.6
+
+#pass=2-581, test_acc=0.987336, time=35919.9, testPredTime=912.461, d-obj=-1645.17, p-obj=13749.2
+
+#pass=2-1320, test_acc=0.987481, time=37667.9, testPredTime=644.204, d-obj=-1669.85, p-obj=14552.4
+
+#pass=2-2059, test_acc=0.987634, time=39084.7, testPredTime=676.246, d-obj=-1699.94, p-obj=11155.8

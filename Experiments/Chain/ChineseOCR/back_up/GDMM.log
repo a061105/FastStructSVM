@@ -1,0 +1,14 @@
+using heldout data set: /scratch/cluster/ianyen/data/ChineseOCR/data.fea.test, early_terminate=100
+D=86
+K=3039
+N=172318
+nSeq=11954
+split_up_rate=1, admm_step_size=1, C=1, eta=0.1
+i=0, infea=0.00287612, nnz_a=1.98244, nnz_b=2, uni_search=35.0707, uni_subSolve=0.243483, uni_maintain=0.0944386, bi_search=4835, bi_subSolve=0.667959, bi_maintain=1.97697, admm_maintain=0.250335, area1=-nan, area23=-nan, area4=-nan, dual_obj=-22.4532, overall time=4887.71
+i=1, infea=0.00512607, nnz_a=2.81783, nnz_b=2.93823, uni_search=36.2303, uni_subSolve=0.224406, uni_maintain=0.118088, bi_search=5170.33, bi_subSolve=0.478409, bi_maintain=1.97403, admm_maintain=0.301289, area1=-nan, area23=-nan, area4=-nan, dual_obj=-46.1273, overall time=10103.2
+i=2, infea=0.00714688, nnz_a=3.5483, nnz_b=3.81955, uni_search=29.4753, uni_subSolve=0.217206, uni_maintain=0.144681, bi_search=5947.42, bi_subSolve=0.590894, bi_maintain=2.50802, admm_maintain=0.352743, area1=-nan, area23=-nan, area4=-nan, dual_obj=-70.1306, overall time=16090.2
+i=3, infea=0.008982, nnz_a=4.20365, nnz_b=4.65759, uni_search=39.6704, uni_subSolve=0.371467, uni_maintain=0.226234, bi_search=6139.45, bi_subSolve=0.664347, bi_maintain=2.77764, admm_maintain=0.422486, area1=-nan, area23=-nan, area4=-nan, dual_obj=-94.5596, overall time=22280.8
+i=4, infea=0.0106675, nnz_a=4.80167, nnz_b=5.45732, uni_search=35.9026, uni_subSolve=0.361125, uni_maintain=0.272458, bi_search=5393.94, bi_subSolve=0.595779, bi_maintain=2.50661, admm_maintain=0.377693, area1=-nan, area23=-nan, area4=-nan, dual_obj=-119.224, overall time=27720.8
+i=5, infea=0.0122331, nnz_a=5.35098, nnz_b=6.21502, uni_search=33.6457, uni_subSolve=0.341845, uni_maintain=0.289959, bi_search=4830.09, bi_subSolve=0.570894, bi_maintain=2.40315, admm_maintain=0.486919, area1=-nan, area23=-nan, area4=-nan, dual_obj=-144.013, overall time=32594.5
+i=6, infea=0.0136924, nnz_a=5.85822, nnz_b=6.92324, uni_search=40.1257, uni_subSolve=0.468249, uni_maintain=0.421046, bi_search=4999.4, bi_subSolve=0.637008, bi_maintain=2.61629, admm_maintain=0.461777, area1=-nan, area23=-nan, area4=-nan, dual_obj=-168.829, overall time=37644.4
+i=7, infea=0.0150711, nnz_a=6.32897, nnz_b=7.57937, uni_search=34.2256, uni_subSolve=0.412269, uni_maintain=0.380022, bi_search=4670.24, bi_subSolve=0.631401, bi_maintain=2.55047, admm_maintain=0.468281, area1=-nan, area23=-nan, area4=-nan, dual_obj=-193.648, overall time=42358.8
