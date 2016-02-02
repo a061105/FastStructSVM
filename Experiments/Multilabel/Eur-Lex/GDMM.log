@@ -6,3 +6,4 @@ d=237.62
 r=1
 i=0, a_nnz=6.28466, ever_a_nnz=6.28466, b_nnz=18.5154, uni_search=73.6073, uni_subSolve=1.08903, uni_maintain_time=0.198813, bi_search=10156.1, bi_subSolve=0.210612, bi_maintain_time=0.249448, admm_maintain=0.179085, area4=-nan, infea=3.98075, d_obj=3840.95, overall time=10233.9
 i=1, a_nnz=7.01688, ever_a_nnz=7.16039, b_nnz=24.8032, uni_search=100.057, uni_subSolve=1.02822, uni_maintain_time=0.191456, bi_search=10154.6, bi_subSolve=0.236526, bi_maintain_time=0.278517, admm_maintain=0.168029, area4=-nan, infea=9.49816, d_obj=6211.53, overall time=20490.7
+i=2, a_nnz=7.56894, ever_a_nnz=7.97456, b_nnz=31.2897, uni_search=94.2223, uni_subSolve=1.04078, uni_maintain_time=0.186606, bi_search=10147.5, bi_subSolve=0.286705, bi_maintain_time=0.321277, admm_maintain=0.196741, area4=-nan, infea=12.5364, d_obj=7597.09, overall time=30734.7

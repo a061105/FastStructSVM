@@ -1297,7 +1297,7 @@ class BCFWsolve{
 				Int len = seq->labels.size();
 				for(vector<pair<Int, Float>>::iterator it = act_k_index[i].begin(); it != act_k_index[i].end(); it++){
 					if (it->first != yi)
-						uni_obj += it->second / len;
+						uni_obj += it->second;
 				}
 				/*for(Int k=0;k<K;k++)
 					if( k != yi ){

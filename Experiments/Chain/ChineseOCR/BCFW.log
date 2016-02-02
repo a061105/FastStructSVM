@@ -4,17 +4,3 @@ d=9496875
 K=3039
 lambda=8.3654e-05
 running BCFW on 11954 examples...
-
-#pass=0-100, test_acc=0.0170843, time=161.517, testPredTime=155.625, d-obj=-0.0999818, p-obj=5782.71
-
-#pass=0-200, test_acc=0.0261959, time=255.93, testPredTime=137.074, d-obj=-0.203539, p-obj=6385.61
-
-#pass=0-300, test_acc=0.0290433, time=375.263, testPredTime=133.989, d-obj=-0.337183, p-obj=6683.81
-
-#pass=0-400, test_acc=0.0296128, time=464.176, testPredTime=67.4651, d-obj=-0.462687, p-obj=7015.53
-
-#pass=0-500, test_acc=0.0296128, time=603.324, testPredTime=118.073, d-obj=-0.603297, p-obj=7166.81
-
-#pass=0-600, test_acc=0.0404328, time=693.281, testPredTime=85.7797, d-obj=-0.746078, p-obj=7156.87
-
-#pass=0-700, test_acc=0.0461276, time=793.69, testPredTime=82.8279, d-obj=-0.896393, p-obj=7281.69

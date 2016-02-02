@@ -555,7 +555,7 @@ double primal_obj( Param* param, int total, int subsample,  Model* model){
 		Int i = indices[mm];	
 		Seq* seq = data->at(i);
 		Labels* labels = &(seq->labels);
-		chain_oracle(param, model, seq, NULL, ystar);
+		chain_oracle(param, model, seq, labels, ystar);
 		Int T = labels->size();
 
 		for (Int t = 0; t < T; t++){

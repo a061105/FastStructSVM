@@ -62,3 +62,17 @@ running SSG on 5991 examples...
 #pass=3-2719, test_acc=0.986936, time=29105.1, testPredTime=732.753, p-obj=149658
 
 #pass=3-3458, test_acc=0.98686, time=29898.6, testPredTime=348.847, p-obj=146098
+
+#pass=3-4197, test_acc=0.98697, time=30901.6, testPredTime=619.299, p-obj=134487
+
+#pass=3-4936, test_acc=0.986911, time=31862.8, testPredTime=569.072, p-obj=125664
+
+#pass=3-5675, test_acc=0.986775, time=33123.5, testPredTime=741.931, p-obj=127352
+
+#pass=4-423, test_acc=0.986962, time=33908.4, testPredTime=301.342, p-obj=115832
+
+#pass=4-1162, test_acc=0.986962, time=34761.5, testPredTime=644.754, p-obj=115673
+
+#pass=4-1901, test_acc=0.986962, time=36036, testPredTime=824.582, p-obj=109175
+
+#pass=4-2640, test_acc=0.986851, time=36982.8, testPredTime=589.741, p-obj=107135

@@ -484,7 +484,7 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 		Labels* labels = &(ins->labels);
 		labelToFracLabel( param, labels, yn );
 
-		multilabel_oracle(param, model, ins, NULL, ystar);
+		multilabel_oracle(param, model, ins, labels, ystar);
 		multilabel_featuremap(param, ins, yn, phi_n);
 		multilabel_featuremap(param, ins, ystar, phi_star);
 		/*SparseVec* xt = &(ins->feature);

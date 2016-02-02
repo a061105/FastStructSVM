@@ -12,96 +12,33 @@ For product information, visit www.mathworks.com.
 	Academic License
 
 
-ans =
+filename =
 
-           2        5973
-
-
-ans =
-
-     2    75
-
-
-ans =
-
-     2    89
-
-
-ans =
-
-           2        3807
-
-
-ans =
-
-     2    72
-
-
-ans =
-
-     2    81
+Multilabel/rcv1/time_obj/BCFW
 
 
 filename =
 
-Chain/POS/time_obj/BCFW
-
-
-ans =
-
-           2        5973
-
-[Warning: There is no axes with which to associate a legend.] 
-[> In legend (line 187)
-  In plotFig2 (line 74)] 
-
-filename =
-
-Chain/POS/time_obj/GDMM
-
-
-ans =
-
-     2    75
+Multilabel/rcv1/time_obj/GDMM
 
 
 filename =
 
-Chain/POS/time_obj/GDMM-subFMO
-
-
-ans =
-
-     2    89
+Multilabel/rcv1/time_obj/GDMM-subFMO
 
 
 filename =
 
-Chain/POS/time_obj/SSG
-
-
-ans =
-
-           2        3807
+Multilabel/rcv1/time_obj/SSG
 
 
 filename =
 
-Chain/POS/time_obj/Soft-BCFW
-
-
-ans =
-
-     2    72
+Multilabel/rcv1/time_obj/Soft-BCFW
 
 
 filename =
 
-Chain/POS/time_obj/Soft-BCFW-accurate
-
-
-ans =
-
-     2    81
+Multilabel/rcv1/time_obj/Soft-BCFW-accurate
 
 [?1l>

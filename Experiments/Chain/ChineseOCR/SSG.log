@@ -4,33 +4,3 @@ d=9496875
 K=3039
 lambda=8.3654e-05
 running SSG on 11954 examples...
-
-#pass=0-100, test_acc=0.0256264, time=44.5452, testPredTime=44.1859, p-obj=3.19299e+09
-
-#pass=0-200, test_acc=0.0335991, time=96.4546, testPredTime=87.4703, p-obj=1.542e+09
-
-#pass=0-300, test_acc=0.0370159, time=155.037, testPredTime=56.9467, p-obj=9.97767e+08
-
-#pass=0-400, test_acc=0.0353075, time=204.494, testPredTime=48.8482, p-obj=7.26408e+08
-
-#pass=0-500, test_acc=0.0341686, time=249.163, testPredTime=42.9672, p-obj=5.64936e+08
-
-#pass=0-600, test_acc=0.034738, time=292.509, testPredTime=42.6321, p-obj=4.67757e+08
-
-#pass=0-700, test_acc=0.0370159, time=334.629, testPredTime=42.6566, p-obj=3.94771e+08
-
-#pass=0-800, test_acc=0.046697, time=384.469, testPredTime=50.9245, p-obj=3.41215e+08
-
-#pass=0-900, test_acc=0.0461276, time=427.407, testPredTime=43.9306, p-obj=2.99725e+08
-
-#pass=0-1000, test_acc=0.047836, time=480.953, testPredTime=60.2713, p-obj=2.66731e+08
-
-#pass=0-1100, test_acc=0.0501139, time=552.102, testPredTime=67.5375, p-obj=2.40041e+08
-
-#pass=0-1200, test_acc=0.0535308, time=617.207, testPredTime=66.0509, p-obj=2.17925e+08
-
-#pass=0-1300, test_acc=0.0541002, time=695.612, testPredTime=71.8389, p-obj=1.99041e+08
-
-#pass=0-1400, test_acc=0.0523918, time=760.309, testPredTime=74.1063, p-obj=1.82089e+08
-
-#pass=0-1500, test_acc=0.0535308, time=819.869, testPredTime=58.8832, p-obj=1.67456e+08
