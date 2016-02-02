@@ -530,7 +530,8 @@ class BCFWsolve{
 				cerr << ", infea=" << p_inf <<  ", d_obj=" << dual_obj();
 				if ((iter+1)% heldout_period == 0){
 					overall_time += omp_get_wtime();
-					cerr << ", p_obj=" << primal_obj(par, 0, N, model);
+					Int subsample = heldout_prob->N;
+					cerr << ", p_obj=" << primal_obj(par, N, subsample, model);
 					overall_time -= omp_get_wtime();
 				}
 				
@@ -552,8 +553,9 @@ class BCFWsolve{
 							cerr << " (" << (++terminate_counting) << "/" << (early_terminate) << ")";
 							if (terminate_counting == early_terminate){
 								//TODO should write best acc model
+								cerr << ", overall time=" << (overall_time + omp_get_wtime());
 								cerr << endl;
-								break;	
+								break;
 							}
 						}
 					}

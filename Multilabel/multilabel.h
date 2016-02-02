@@ -453,7 +453,7 @@ double dot(SparseVec* sv, Float** w, Float** v, Int D, Int K){
         return sum;
 }
 
-double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
+double primal_obj( Param* param, Int total, Int subsample,  Model* model){
 	
 	vector<Instance*>* data = &(param->prob->data);
 
@@ -468,12 +468,11 @@ double primal_obj( Param* param, Int i_start, Int i_end,  Model* model){
 	Int D = param->prob->D;
 	Int N = param->prob->N;
 
-	Int total = i_end - i_start;
-	Int m = 100;
+	Int m = subsample;
 	if (m > total)
 		m = total;
 	vector<Int> indices;
-	for(Int i = i_start; i < i_end; i++){
+	for(Int i = 0; i < total; i++){
 		indices.push_back(i);
 	}
 	random_shuffle(indices.begin(), indices.end());
