@@ -1,0 +1,107 @@
+[?1h=
+                                                                                  < M A T L A B (R) >
+                                                                        Copyright 1984-2015 The MathWorks, Inc.
+                                                                        R2015b (8.6.0.267246) 64-bit (glnxa64)
+                                                                                    August 20, 2015
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+
+	Academic License
+
+
+ans =
+
+           2        5973
+
+
+ans =
+
+     2    75
+
+
+ans =
+
+     2    89
+
+
+ans =
+
+           2        3807
+
+
+ans =
+
+     2    72
+
+
+ans =
+
+     2    81
+
+
+filename =
+
+Chain/POS/time_obj/BCFW
+
+
+ans =
+
+           2        5973
+
+[Warning: There is no axes with which to associate a legend.] 
+[> In legend (line 187)
+  In plotFig2 (line 74)] 
+
+filename =
+
+Chain/POS/time_obj/GDMM
+
+
+ans =
+
+     2    75
+
+
+filename =
+
+Chain/POS/time_obj/GDMM-subFMO
+
+
+ans =
+
+     2    89
+
+
+filename =
+
+Chain/POS/time_obj/SSG
+
+
+ans =
+
+           2        3807
+
+
+filename =
+
+Chain/POS/time_obj/Soft-BCFW
+
+
+ans =
+
+     2    72
+
+
+filename =
+
+Chain/POS/time_obj/Soft-BCFW-accurate
+
+
+ans =
+
+     2    81
+
+[?1l>

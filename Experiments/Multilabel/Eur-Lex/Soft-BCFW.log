@@ -5,3 +5,4 @@ N=15643
 d=237.62
 r=1
 i=0, a_nnz=6.29841, ever_a_nnz=6.29841, b_nnz=18.5772, uni_search=77.7172, uni_subSolve=1.21338, uni_maintain_time=0.211802, bi_search=10344.7, bi_subSolve=0.254891, bi_maintain_time=0.237579, admm_maintain=0.228479, area4=-nan, infea=1057.67, d_obj=606983, overall time=10427.8
+i=1, a_nnz=7.23218, ever_a_nnz=7.24637, b_nnz=25.392, uni_search=90.8586, uni_subSolve=1.10041, uni_maintain_time=0.175994, bi_search=10312.1, bi_subSolve=0.304336, bi_maintain_time=0.347322, admm_maintain=0.406832, area4=-nan, infea=1205.7, d_obj=706302, overall time=20833.6

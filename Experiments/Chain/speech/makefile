@@ -50,7 +50,7 @@ time_obj/BCFW:
 	cat BCFW.log | grep 'p-obj' | sed 's/^.*time=//' | sed 's/,.*p-obj=/ /' >> time_obj/BCFW 
 
 time_obj/%:
-	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $2 " " $1; }' >> time_obj/$*
+	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }' >> time_obj/$*
 
 time_acc:
 	for i in $(Solvers); do \
@@ -58,10 +58,10 @@ time_acc:
 	done
 
 time_acc/SSG:	
-	cat SSG.log | grep 'test_acc=' | sed 's/^.*test_acc=//' | sed 's/,.*time=/ /' | sed "s/,.*$$//" | awk '{ print $2 " " $1; }' >> time_acc/SSG
+	cat SSG.log | grep 'test_acc=' | sed 's/^.*test_acc=//' | sed 's/,.*time=/ /' | sed "s/,.*$$//" | awk '{ print $$2 " " $$1; }' >> time_acc/SSG
 
 time_acc/BCFW:	
-	cat BCFW.log | grep 'test_acc=' | sed 's/^.*test_acc=//' | sed 's/,.*time=/ /' | sed 's/,.*$$//' | awk '{ print $2 " " $1; }' >> time_acc/BCFW
+	cat BCFW.log | grep 'test_acc=' | sed 's/^.*test_acc=//' | sed 's/,.*time=/ /' | sed 's/,.*$$//' | awk '{ print $$2 " " $$1; }' >> time_acc/BCFW
 
 time_acc/%:
-	cat $*.log | grep 'heldout Acc' | sed 's/^.*heldout Acc=//' | sed 's/,.*overall time=/ /' | awk '{ print $2 " " $1; }' >> time_acc/$*
+	cat $*.log | grep 'heldout Acc' | sed 's/^.*heldout Acc=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }' >> time_acc/$*

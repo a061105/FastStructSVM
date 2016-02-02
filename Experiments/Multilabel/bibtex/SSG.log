@@ -56,3 +56,7 @@ running SSG on 5991 examples...
 #pass=3-502, test_acc=0.986953, time=26870.6, testPredTime=665.635, p-obj=188492
 
 #pass=3-1241, test_acc=0.986902, time=27278.6, testPredTime=360.253, p-obj=195066
+
+#pass=3-1980, test_acc=0.987013, time=28301.6, testPredTime=491.958, p-obj=158485
+
+#pass=3-2719, test_acc=0.986936, time=29105.1, testPredTime=732.753, p-obj=149658
