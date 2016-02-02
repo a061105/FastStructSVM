@@ -1,0 +1,10 @@
+#train_samples=20835
+#test_samples=1000
+d=10726412
+K=226
+lambda=4.79962e-05
+running SSG on 20835 examples...
+
+#pass=0-1000, test_acc=0.99627, time=16226.7, testPredTime=7065.77, p-obj=2.29971e+07
+
+#pass=0-2000, test_acc=0.99685, time=33064.4, testPredTime=8227.33, p-obj=5.89573e+06

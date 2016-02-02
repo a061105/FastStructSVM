@@ -1,0 +1,10 @@
+#train_samples=20835
+#test_samples=1000
+d=10726412
+K=226
+lambda=4.79962e-05
+running BCFW on 20835 examples...
+
+#pass=0-1000, test_acc=0.991066, time=26334.8, testPredTime=6561.09, d-obj=-10621, p-obj=65723.3
+
+#pass=0-2000, test_acc=0.99292, time=48629.2, testPredTime=7956.16, d-obj=-12440.2, p-obj=57570

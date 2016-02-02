@@ -1,0 +1,7 @@
+using heldout data set: /scratch/cluster/ianyen/data/multilabel/Eur-Lex.test
+D=5001
+K=3895
+N=15643
+d=237.62
+r=1
+i=0, a_nnz=6.28888, ever_a_nnz=6.28888, b_nnz=18.4536, uni_search=67.8767, uni_subSolve=0.912526, uni_maintain_time=0.162845, bi_search=10151.3, bi_subSolve=0.184718, bi_maintain_time=0.157869, admm_maintain=0.109689, area4=-nan, infea=9263.97, d_obj=613500, overall time=10222.7

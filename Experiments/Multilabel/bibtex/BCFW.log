@@ -1,0 +1,32 @@
+#train_samples=5991
+#test_samples=739
+d=317364
+K=159
+lambda=0.000166917
+running BCFW on 5991 examples...
+
+#pass=0-739, test_acc=0.985226, time=1827.9, testPredTime=544.3, d-obj=-268.349, p-obj=32728.2
+
+#pass=0-1478, test_acc=0.986451, time=4018.86, testPredTime=645.144, d-obj=-444.11, p-obj=27187.4
+
+#pass=0-2217, test_acc=0.986664, time=6269.57, testPredTime=608.042, d-obj=-576.883, p-obj=26813.5
+
+#pass=0-2956, test_acc=0.98686, time=8272.91, testPredTime=750.424, d-obj=-750.932, p-obj=24652.1
+
+#pass=0-3695, test_acc=0.987021, time=10202.9, testPredTime=667.779, d-obj=-847.193, p-obj=24317.3
+
+#pass=0-4434, test_acc=0.986894, time=12282.2, testPredTime=764.831, d-obj=-923.702, p-obj=19654
+
+#pass=0-5173, test_acc=0.98726, time=13963.9, testPredTime=549.202, d-obj=-1034.2, p-obj=23421.9
+
+#pass=0-5912, test_acc=0.987072, time=16199.1, testPredTime=678.421, d-obj=-1134.35, p-obj=21206.5
+
+#pass=1-660, test_acc=0.987277, time=18435.2, testPredTime=930.908, d-obj=-1165.62, p-obj=20143.3
+
+#pass=1-1399, test_acc=0.987353, time=20746.5, testPredTime=970.719, d-obj=-1203.12, p-obj=13535.2
+
+#pass=1-2138, test_acc=0.987413, time=23020.5, testPredTime=1064.37, d-obj=-1277.07, p-obj=17607.8
+
+#pass=1-2877, test_acc=0.987294, time=25069.2, testPredTime=1166.01, d-obj=-1325.7, p-obj=13999.6
+
+#pass=1-3616, test_acc=0.98743, time=27356.7, testPredTime=986.216, d-obj=-1410.51, p-obj=14657.6

@@ -1,0 +1,16 @@
+using heldout data set: /scratch/cluster/ianyen/data/multilabel/Eur-Lex.test
+D=5001
+K=3895
+N=15643
+d=237.62
+r=3
+i=0, a_nnz=6.29572, ever_a_nnz=6.29572, b_nnz=18.6097, uni_search=20.3633, uni_subSolve=1.14028, uni_maintain_time=0.174002, bi_search=0.0440888, bi_subSolve=0.154911, bi_maintain_time=0.149278, admm_maintain=0.171068, area4=1.00179, infea=1.39362, d_obj=959.555, overall time=24.6385
+i=1, a_nnz=7.08713, ever_a_nnz=7.20271, b_nnz=25.2738, uni_search=26.4552, uni_subSolve=1.32034, uni_maintain_time=0.195413, bi_search=0.102374, bi_subSolve=0.200205, bi_maintain_time=0.174389, admm_maintain=0.219811, area4=1.00217, infea=1.51312, d_obj=384.046, overall time=53.5844
+i=2, a_nnz=7.72838, ever_a_nnz=8.04794, b_nnz=32.2604, uni_search=32.9514, uni_subSolve=1.54391, uni_maintain_time=0.249868, bi_search=0.163836, bi_subSolve=0.294256, bi_maintain_time=0.246506, admm_maintain=0.322795, area4=1.00614, infea=3.61157, d_obj=2706.71, overall time=89.6765
+i=3, a_nnz=8.26453, ever_a_nnz=8.85527, b_nnz=39.6223, uni_search=39.0674, uni_subSolve=1.76678, uni_maintain_time=0.291074, bi_search=0.201432, bi_subSolve=0.35926, bi_maintain_time=0.294095, admm_maintain=0.348579, area4=1.00563, infea=2.94519, d_obj=1447.8, overall time=132.375
+i=4, a_nnz=8.74966, ever_a_nnz=9.63038, b_nnz=47.2939, uni_search=43.9778, uni_subSolve=1.86641, uni_maintain_time=0.298032, bi_search=0.232309, bi_subSolve=0.416588, bi_maintain_time=0.342721, admm_maintain=0.422039, area4=1.00831, infea=2.93291, d_obj=1391.84, overall time=180.343
+i=5, a_nnz=9.20661, ever_a_nnz=10.3786, b_nnz=55.2661, uni_search=45.8546, uni_subSolve=1.67972, uni_maintain_time=0.252854, bi_search=0.25239, bi_subSolve=0.456608, bi_maintain_time=0.354924, admm_maintain=0.481678, area4=1.01048, infea=2.44002, d_obj=589.058, overall time=230.085
+i=6, a_nnz=9.62872, ever_a_nnz=11.1112, b_nnz=63.6026, uni_search=46.9992, uni_subSolve=1.54758, uni_maintain_time=0.230818, bi_search=0.212905, bi_subSolve=0.399093, bi_maintain_time=0.304207, admm_maintain=0.485299, area4=1.01406, infea=2.30252, d_obj=571.998, overall time=280.947
+i=7, a_nnz=10.0309, ever_a_nnz=11.833, b_nnz=72.3051, uni_search=52.2797, uni_subSolve=1.7034, uni_maintain_time=0.252429, bi_search=0.270737, bi_subSolve=0.500766, bi_maintain_time=0.371172, admm_maintain=0.478823, area4=1.01637, infea=3.39536, d_obj=2147.39, overall time=337.279
+i=8, a_nnz=10.4468, ever_a_nnz=12.5611, b_nnz=81.5579, uni_search=54.6814, uni_subSolve=1.72436, uni_maintain_time=0.259834, bi_search=0.280985, bi_subSolve=0.530077, bi_maintain_time=0.385927, admm_maintain=0.472964, area4=1.01816, infea=3.19193, d_obj=1607.14, overall time=396.304
+i=9, a_nnz=10.8382, ever_a_nnz=13.2741, b_nnz=91.0871, uni_search=61.0672, uni_subSolve=1.89321, uni_maintain_time=0.274792, bi_search=0.424418, bi_subSolve=0.785758, bi_maintain_time=0.557058, admm_maintain=0.85868, area4=1.01969, infea=3.48198, d_obj=288.39
