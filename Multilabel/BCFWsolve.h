@@ -528,8 +528,12 @@ class BCFWsolve{
 				cerr << ", admm_maintain="  << admm_maintain_time;
 				cerr << ", area4=" << (Float)mat_top/mat_bottom;
 				cerr << ", infea=" << p_inf <<  ", d_obj=" << dual_obj();
-				if ((iter+1)% heldout_period == 0)
+				if ((iter+1)% heldout_period == 0){
+					overall_time += omp_get_wtime();
 					cerr << ", p_obj=" << primal_obj(par, 0, N, model);
+					overall_time -= omp_get_wtime();
+				}
+				
 				mat_top = mat_bottom = 0;
 				if((iter+1)%heldout_period==0){
 					if (heldout_prob == NULL){
@@ -554,6 +558,7 @@ class BCFWsolve{
 						}
 					}
 				}
+				cerr << ", overall time=" << (overall_time + omp_get_wtime());
 				cerr << endl;
 			}
 			
