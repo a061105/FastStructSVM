@@ -120,7 +120,7 @@ double primal_obj( Param* param, int i_start, int i_end, int n_sample,  Model* m
 		//loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar)/labels->size();
 		loss_term += dot(phi_star, model->w) - dot(phi_i, model->w) + loss(param, labels->at(i), ystar);
 	}
-	//loss_term *= ((double)(i_end-i_start))/m;
+	loss_term *= ((double)(i_end-i_start))/m;
 	
 	double reg_term = 0.0;
 	double lambda_bar = param->lambda*param->n_train;

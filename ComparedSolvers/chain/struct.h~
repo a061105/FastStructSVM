@@ -97,18 +97,18 @@ double primal_obj( Param* param, int i_start, int i_end, int n_sample,  Model* m
 	SparseVect* phi_star = new SparseVect();
 	SparseVect* psi_i = new SparseVect();
 
-	/*int m = n_sample;
+	int m = n_sample;
 	if( m > i_end-i_start )
 		m = i_end-i_start;
 	vector<int> index;
 	for(int i=i_start;i<i_end;i++)
 		index.push_back(i);
 	random_shuffle(index.begin(), index.end());
-	*/
+	
 	double loss_term = 0.0;
-	//for(int r=0;r<m;r++){
-	for(int i=i_start;i<i_end;i++){
-		//int i = index[r];
+	for(int r=0;r<m;r++){
+	//for(int i=i_start;i<i_end;i++){
+		int i = index[r];
 
 		Instance* ins = data->at(i);
 		Label* label = labels->at(i);
