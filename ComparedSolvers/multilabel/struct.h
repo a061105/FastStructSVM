@@ -140,8 +140,8 @@ double primal_obj( Param* param, Int i_start, Int i_end, Int n_sample, Model* mo
 		param->featuremapFunc(param, ins, yi,      phi_i);
 		param->featuremapFunc(param, ins, ystar,   phi_star);
 		
-		double diff = dot(phi_star, model->w) - dot(phi_i, model->w);
-		/*if( diff < 0.0 ){
+		/*double diff = dot(phi_star, model->w) - dot(phi_i, model->w);
+		if( diff < 0.0 ){
 			cerr << "diff=" << diff << endl;
 			cerr << "y_star: " << endl;
 			prInt(cerr, ystar);
@@ -163,10 +163,10 @@ double primal_obj( Param* param, Int i_start, Int i_end, Int n_sample, Model* mo
 	double reg_term = 0.0;
 	double lambda_bar = param->lambda*param->n_train;
 	for(Int i=0; i<model->d; i++){
-		double wbar_val = model->w[i] * lambda_bar;
+		double wbar_val = model->w[i];
 		reg_term += wbar_val*wbar_val;
 	}
-	reg_term /= (lambda_bar*2.0);
+	reg_term *= (lambda_bar/2.0);
 	delete ystar;
 	delete yi;
 	delete phi_i;
