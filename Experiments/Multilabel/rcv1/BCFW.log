@@ -1,12 +1,14 @@
 #train_samples=20835
-#test_samples=1000
-d=10726412
-K=226
+#test_samples=100
+d=10678950
+K=225
 lambda=4.79962e-05
 running BCFW on 20835 examples...
 
-#pass=0-1000, test_acc=0.991066, time=26334.8, testPredTime=6561.09, d-obj=-10621, p-obj=65723.3
+#pass=0-100, test_acc=0.933644, time=2576.1, testPredTime=1425.72, d-obj=-6599.93, p-obj=1.07928e+06
 
-#pass=0-2000, test_acc=0.99292, time=48629.2, testPredTime=7956.16, d-obj=-12440.2, p-obj=57570
+#pass=0-200, test_acc=0.974222, time=6042.69, testPredTime=1234.25, d-obj=-7623.24, p-obj=538540
 
-#pass=0-3000, test_acc=0.993978, time=68114.4, testPredTime=5485.26, d-obj=-13395, p-obj=55744.7
+#pass=0-300, test_acc=0.981422, time=9541.33, testPredTime=1218.05, d-obj=-8902.59, p-obj=348834
+
+#pass=0-400, test_acc=0.985244, time=12293.8, testPredTime=1389.49, d-obj=-8867.78, p-obj=226123

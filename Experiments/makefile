@@ -4,7 +4,12 @@ Solvers=SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO
 
 
 all:
-	echo $(DirsChain)
+	for i in $(DirsMultilabel); do \
+		make $$i; \
+	done
+	for i in $(DirsChain); do \
+		make $$i; \
+	done
 
 .PHONY: $(DirsChain) $(DirsMultilabel)
 
@@ -13,8 +18,8 @@ Chain/POS:
 	rm -f $@/time_acc/*
 	$(MAKE) -C $@ time_obj
 	$(MAKE) -C $@ time_acc
-	./plotAcc.sh $(@F)-Acc $@/time_acc/*
-	./plotObj.sh $(@F)-Obj $@/time_obj/*
+	#./plotAcc.sh $(@F)-Acc plot$(@F)Acc $@/time_acc/*
+	./plotObj.sh $(@F)-Obj plot$(@F)Obj $@/time_obj/*
 
 Chain/speech:
 	rm -f $@/time_obj/*

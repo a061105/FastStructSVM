@@ -1,8 +1,11 @@
-
 #!/bin/bash
 
 argList="'$1'"
 fileName="$1"
+
+shift
+
+prog=$1
 
 shift
 
@@ -15,6 +18,7 @@ done
 echo $argList
 echo $fileName
 
-matlab -nodisplay -r "plotObj($argList)" > log
+matlab -nodisplay -r "${prog}($argList)" > log
+chmod 777 $fileName.pdf
 mv $fileName.pdf /u/ianyen/public_html/figures/
 #mv $fileName.eps ~/public_html/figures/

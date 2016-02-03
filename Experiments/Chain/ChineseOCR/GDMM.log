@@ -3,5 +3,7 @@ D=86
 K=3039
 N=172318
 nSeq=11954
-split_up_rate=1, admm_step_size=1, C=1, eta=0.1
-i=0, infea=0.00287804, nnz_a=1.98222, nnz_b=2, uni_search=33.0207, uni_subSolve=0.191183, uni_maintain=0.0906782, bi_search=4451.34, bi_subSolve=0.617664, bi_maintain=1.79083, admm_maintain=0.254197, area1=-nan, area23=-nan, area4=-nan, dual_obj=-22.5118
+split_up_rate=1, admm_step_size=1, C=1, eta=10
+i=0, infea=0.0127733, nnz_a=1.99874, nnz_b=2, uni_search=42.6891, uni_subSolve=0.305215, uni_maintain=0.109387, bi_search=7891.87, bi_subSolve=1.33202, bi_maintain=1.81161, admm_maintain=0.30661, area1=-nan, area23=-nan, area4=-nan, dual_obj=-1636.64, p_obj=204491, heldout Acc=0.153759, overall time=7956.44
+i=1, infea=0.0181142, nnz_a=2.98894, nnz_b=3, uni_search=41.2829, uni_subSolve=0.387598, uni_maintain=0.150634, bi_search=11154.6, bi_subSolve=1.67968, bi_maintain=7.55677, admm_maintain=0.686489, area1=-nan, area23=-nan, area4=-nan, dual_obj=-2826.36, p_obj=196105, heldout Acc=0.197608, overall time=19185.2
+i=2, infea=0.0211824, nnz_a=3.96273, nnz_b=3.99999, uni_search=54.2637, uni_subSolve=0.509344, uni_maintain=0.26191, bi_search=10822, bi_subSolve=1.30618, bi_maintain=2.99472, admm_maintain=0.458618, area1=-nan, area23=-nan, area4=-nan, dual_obj=-3723.33, p_obj=197102, heldout Acc=0.264806, overall time=30078.2

@@ -13,19 +13,19 @@ Solvers=SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO
 .PRECIOUS: %.log
 
 SSG.log: $(train_file) $(test_file)
-	((./$(dir_struct)/ComparedSolvers/multilabel/structTrain $(train_file) $(test_file) 1.0 model.SSG 0 100) 2>&1 ) >> SSG.log
+	((./$(dir_struct)/ComparedSolvers/multilabel/structTrain $(train_file) $(test_file) 1.0 model.SSG 0 1000) 2>&1 ) >> SSG.log
 
 BCFW.log: $(train_file) $(test_file)
-	((./$(dir_struct)/ComparedSolvers/multilabel/structTrain $(train_file) $(test_file) 1.0 model.BCFW 1 100) 2>&1 ) >> BCFW.log
+	((./$(dir_struct)/ComparedSolvers/multilabel/structTrain $(train_file) $(test_file) 1.0 model.BCFW 1 1000) 2>&1 ) >> BCFW.log
 
 Soft-BCFW.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 1 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.Soft-BCFW) 2>&1 ) >> Soft-BCFW.log
+	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 1 -m 10000 -e 50 -o 2 -h $(test_file) $(train_file) model.Soft-BCFW) 2>&1 ) >> Soft-BCFW.log
 
 Soft-BCFW-accurate.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 10 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.Soft-BCFW-accurate) 2>&1 ) >> Soft-BCFW-accurate.log
+	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 10 -m 10000 -e 50 -o 2 -h $(test_file) $(train_file) model.Soft-BCFW-accurate) 2>&1 ) >> Soft-BCFW-accurate.log
 
 GDMM.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -b -q 1 -a 1 -t 0.1 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.GDMM) 2>&1 ) >> GDMM.log
+	((./$(dir_struct)/Multilabel/train -s 1 -b -q 1 -a 1 -t 0.1 -m 10000 -e 50 -o 2 -h $(test_file) $(train_file) model.GDMM) 2>&1 ) >> GDMM.log
 
 GDMM-subFMO.log: $(train_file) $(test_file)
 	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.GDMM-subFMO) 2>&1 ) >> GDMM-subFMO.log
@@ -47,7 +47,7 @@ time_obj/BCFW:
 
 time_obj/%:
 	echo "time objective" >> time_obj/$*
-	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }' >> time_obj/$*
+	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /'| awk '{ print $$2 " " $$1; }'  | sed 's/[.]*$$//' >> time_obj/$*
 
 time_acc:
 	for i in $(Solvers); do \
@@ -64,4 +64,4 @@ time_acc/BCFW:
 
 time_acc/%:
 	echo "time accuracy" >> time_acc/$*
-	cat $*.log | grep 'heldout Acc' | sed 's/^.*heldout Acc=//' | sed 's/,.*overall time=/ /' | sed 's/ (.*)//' | awk '{ print $$2 " " $$1; }' >> time_acc/$*
+	cat $*.log | grep 'heldout Acc' | sed 's/^.*heldout Acc=//' | sed 's/,.*overall time=/ /' | sed 's/ (.*)//'| awk '{ print $$2 " " $$1; }' >> time_acc/$*

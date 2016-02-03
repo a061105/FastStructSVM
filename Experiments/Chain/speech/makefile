@@ -13,10 +13,10 @@ Solvers=SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO
 .PRECIOUS: %.log
 
 SSG.log: $(train_file) $(test_file)
-	((./$(dir_struct)/ComparedSolvers/chain/structTrain $(train_file) $(test_file) 1.0 model.SSG 0 100) 2>&1 ) >> SSG.log
+	((./$(dir_struct)/ComparedSolvers/chain/structTrain $(train_file) $(test_file) 1.0 model.SSG 0 1000) 2>&1 ) >> SSG.log
 
 BCFW.log: $(train_file) $(test_file)
-	((./$(dir_struct)/ComparedSolvers/chain/structTrain $(train_file) $(test_file) 1.0 model.BCFW 1 100) 2>&1 ) >> BCFW.log
+	((./$(dir_struct)/ComparedSolvers/chain/structTrain $(train_file) $(test_file) 1.0 model.BCFW 1 1000) 2>&1 ) >> BCFW.log
 
 Soft-BCFW.log: $(train_file) $(test_file)
 	((./$(dir_struct)/ChainStruct/train -s 1 -b -u -q 1 -a 0 -t 1 -m 10000 -e 100 -o 10 -h $(test_file) $(train_file) model.Soft-BCFW) 2>&1 ) >> Soft-BCFW.log

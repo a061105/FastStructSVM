@@ -1,7 +1,7 @@
 dir_struct=../../../
 data_dir=/scratch/cluster/ianyen/data/multilabel
 train_file=$(data_dir)/rcv1_regions.train
-test_file=$(data_dir)/rcv1_regions.subtest.1k
+test_file=$(data_dir)/rcv1_regions.subtest.100
 
 Solvers=SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO
 
@@ -19,16 +19,19 @@ BCFW.log: $(train_file) $(test_file)
 	((./$(dir_struct)/ComparedSolvers/multilabel/structTrain $(train_file) $(test_file) 1.0 model.BCFW 1 100) 2>&1 ) >> BCFW.log
 
 Soft-BCFW.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 1 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.Soft-BCFW) 2>&1 ) >> Soft-BCFW.log
+	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 1 -m 10000 -e 50 -o 1 -h $(test_file) $(train_file) model.Soft-BCFW) 2>&1 ) >> Soft-BCFW.log
 
 Soft-BCFW-accurate.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 10 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.Soft-BCFW-accurate) 2>&1 ) >> Soft-BCFW-accurate.log
+	((./$(dir_struct)/Multilabel/train -s 1 -b -u -q 1 -a 0 -t 10 -m 10000 -e 50 -o 1 -h $(test_file) $(train_file) model.Soft-BCFW-accurate) 2>&1 ) >> Soft-BCFW-accurate.log
 
 GDMM.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -b -q 1 -a 1 -t 0.1 -m 10000 -e 50 -o 10 -h $(test_file) $(train_file) model.GDMM) 2>&1 ) >> GDMM.log
+	((./$(dir_struct)/Multilabel/train -s 1 -b -q 1 -a 1 -t 0.1 -m 10000 -e 50 -o 1 -h $(test_file) $(train_file) model.GDMM) 2>&1 ) >> GDMM.log
 
 GDMM-subFMO.log: $(train_file) $(test_file)
-	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 100 -h $(test_file) $(train_file) model.GDMM-subFMO) 2>&1 ) >> GDMM-subFMO.log
+	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 10 -h $(test_file) $(train_file) model.GDMM-subFMO) 2>&1 ) >> GDMM-subFMO.log
+
+GDMM-subFMO-subtest.log: $(train_file) $(data_dir)/rcv1_regions.subtest.10	
+	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 10 -h $(data_dir)/rcv1_regions.subtest.10 $(train_file) model.GDMM-subFMO-subtest) 2>&1 ) >> GDMM-subFMO-subtest.log
 
 .PHONY: time_obj time_acc
 
@@ -47,7 +50,7 @@ time_obj/BCFW:
 
 time_obj/%:
 	echo "time objective" >> time_obj/$*
-	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }' >> time_obj/$*
+	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }'  | sed 's/[.]*$$//' >> time_obj/$*
 
 time_acc:
 	for i in $(Solvers); do \

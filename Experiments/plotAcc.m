@@ -1,7 +1,7 @@
 
 function plotAcc(varargin)
 is_acc = true;
-color_arr = {'g' 'c' 'k' 'k' 'b' 'r' 'w' 'y' 'b'};
+color_arr = {'g' 'c' 'k' 'k' 'b' 'r' 'm' 'y' 'b'};
 %color_arr = { 'r'  'k' 'r' 'r' 'k'  'k'  'c'   'b'};
 dot_arr = { 'o' 'd'  '*'  's'  'x' 'x' 's'    '^'};
 %dot_arr = {'' '' '' '' '' '' '' ''    ''};

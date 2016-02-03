@@ -5,74 +5,74 @@ K=159
 lambda=0.000166917
 running SSG on 5991 examples...
 
-#pass=0-739, test_acc=0.985558, time=3947.19, testPredTime=695.455, p-obj=1.26256e+07
+#pass=0-739, test_acc=0.985558, time=3243.57, testPredTime=322.189, p-obj=1.26654e+07
 
-#pass=0-1478, test_acc=0.98583, time=5514.51, testPredTime=558.441, p-obj=5.14099e+06
+#pass=0-1478, test_acc=0.985966, time=4707.18, testPredTime=376.849, p-obj=5.31727e+06
 
-#pass=0-2217, test_acc=0.986051, time=6731.69, testPredTime=302.296, p-obj=3.08877e+06
+#pass=0-2217, test_acc=0.986221, time=5231.18, testPredTime=520.084, p-obj=3.13067e+06
 
-#pass=0-2956, test_acc=0.986341, time=7702.84, testPredTime=584.243, p-obj=2.22658e+06
+#pass=0-2956, test_acc=0.986604, time=6443.06, testPredTime=632.405, p-obj=2.15358e+06
 
-#pass=0-3695, test_acc=0.986536, time=8426.22, testPredTime=261.934, p-obj=1.59689e+06
+#pass=0-3695, test_acc=0.986647, time=7288.59, testPredTime=428.019, p-obj=1.6015e+06
 
-#pass=0-4434, test_acc=0.986834, time=9423.75, testPredTime=227.009, p-obj=1.20103e+06
+#pass=0-4434, test_acc=0.9868, time=8374.81, testPredTime=569.352, p-obj=1.29949e+06
 
-#pass=0-5173, test_acc=0.9868, time=9875.74, testPredTime=303.368, p-obj=1.03247e+06
+#pass=0-5173, test_acc=0.986817, time=9305.33, testPredTime=571.477, p-obj=1.02778e+06
 
-#pass=0-5912, test_acc=0.987072, time=11012.2, testPredTime=398.748, p-obj=878724
+#pass=0-5912, test_acc=0.986826, time=10085.8, testPredTime=415.701, p-obj=863415
 
-#pass=1-660, test_acc=0.987166, time=11849, testPredTime=639.254, p-obj=749149
+#pass=1-660, test_acc=0.986758, time=10769.9, testPredTime=393.078, p-obj=739016
 
-#pass=1-1399, test_acc=0.987098, time=12845.3, testPredTime=516.319, p-obj=622861
+#pass=1-1399, test_acc=0.987055, time=11768.7, testPredTime=645.3, p-obj=621959
 
-#pass=1-2138, test_acc=0.98703, time=13695.4, testPredTime=244.32, p-obj=567806
+#pass=1-2138, test_acc=0.986885, time=12286.4, testPredTime=207.177, p-obj=549355
 
-#pass=1-2877, test_acc=0.987047, time=14096.8, testPredTime=246.736, p-obj=466909
+#pass=1-2877, test_acc=0.986945, time=12589.9, testPredTime=196.784, p-obj=478007
 
-#pass=1-3616, test_acc=0.986911, time=14599.9, testPredTime=289.718, p-obj=457712
+#pass=1-3616, test_acc=0.987021, time=13314.4, testPredTime=234.957, p-obj=435596
 
-#pass=1-4355, test_acc=0.986877, time=15575.6, testPredTime=698.953, p-obj=457001
+#pass=1-4355, test_acc=0.986962, time=14305.5, testPredTime=529.208, p-obj=396272
 
-#pass=1-5094, test_acc=0.9868, time=16803.2, testPredTime=655.513, p-obj=346424
+#pass=1-5094, test_acc=0.986936, time=15125.9, testPredTime=534.604, p-obj=360728
 
-#pass=1-5833, test_acc=0.986783, time=18130.5, testPredTime=750.322, p-obj=333152
+#pass=1-5833, test_acc=0.986877, time=16162.6, testPredTime=481.001, p-obj=326175
 
-#pass=2-581, test_acc=0.986945, time=19119.7, testPredTime=611.745, p-obj=302207
+#pass=2-581, test_acc=0.986945, time=16946.6, testPredTime=672.168, p-obj=303110
 
-#pass=2-1320, test_acc=0.986817, time=20095.4, testPredTime=494.689, p-obj=273736
+#pass=2-1320, test_acc=0.98697, time=17903.4, testPredTime=560.537, p-obj=280471
 
-#pass=2-2059, test_acc=0.986953, time=21207, testPredTime=572.341, p-obj=252209
+#pass=2-2059, test_acc=0.986936, time=18944.7, testPredTime=648.458, p-obj=263185
 
-#pass=2-2798, test_acc=0.986936, time=21863, testPredTime=465.708, p-obj=244353
+#pass=2-2798, test_acc=0.986962, time=19866.5, testPredTime=539.479, p-obj=245839
 
-#pass=2-3537, test_acc=0.986834, time=23039.7, testPredTime=495.402, p-obj=227895
+#pass=2-3537, test_acc=0.987055, time=20947, testPredTime=537.819, p-obj=226431
 
-#pass=2-4276, test_acc=0.986928, time=23778.5, testPredTime=293.241, p-obj=220288
+#pass=2-4276, test_acc=0.987021, time=22216, testPredTime=552.357, p-obj=208705
 
-#pass=2-5015, test_acc=0.986979, time=24452.4, testPredTime=342.671, p-obj=200812
+#pass=2-5015, test_acc=0.986877, time=23351.2, testPredTime=340.551, p-obj=200700
 
-#pass=2-5754, test_acc=0.986928, time=25827, testPredTime=640.948, p-obj=190468
+#pass=2-5754, test_acc=0.987115, time=24243.3, testPredTime=505.318, p-obj=188228
 
-#pass=3-502, test_acc=0.986953, time=26870.6, testPredTime=665.635, p-obj=188492
+#pass=3-502, test_acc=0.986902, time=25210.3, testPredTime=524.385, p-obj=183533
 
-#pass=3-1241, test_acc=0.986902, time=27278.6, testPredTime=360.253, p-obj=195066
+#pass=3-1241, test_acc=0.987047, time=26148.1, testPredTime=372.83, p-obj=167195
 
-#pass=3-1980, test_acc=0.987013, time=28301.6, testPredTime=491.958, p-obj=158485
+#pass=3-1980, test_acc=0.986962, time=27149.2, testPredTime=372.842, p-obj=161597
 
-#pass=3-2719, test_acc=0.986936, time=29105.1, testPredTime=732.753, p-obj=149658
+#pass=3-2719, test_acc=0.987141, time=28092.5, testPredTime=334.878, p-obj=154554
 
-#pass=3-3458, test_acc=0.98686, time=29898.6, testPredTime=348.847, p-obj=146098
+#pass=3-3458, test_acc=0.986868, time=28844.5, testPredTime=368.194, p-obj=143372
 
-#pass=3-4197, test_acc=0.98697, time=30901.6, testPredTime=619.299, p-obj=134487
+#pass=3-4197, test_acc=0.98686, time=29752.5, testPredTime=502.184, p-obj=138510
 
-#pass=3-4936, test_acc=0.986911, time=31862.8, testPredTime=569.072, p-obj=125664
+#pass=3-4936, test_acc=0.986851, time=30699.3, testPredTime=491.14, p-obj=133772
 
-#pass=3-5675, test_acc=0.986775, time=33123.5, testPredTime=741.931, p-obj=127352
+#pass=3-5675, test_acc=0.986962, time=31710.4, testPredTime=717.428, p-obj=125988
 
-#pass=4-423, test_acc=0.986962, time=33908.4, testPredTime=301.342, p-obj=115832
+#pass=4-423, test_acc=0.987004, time=32622.4, testPredTime=509.342, p-obj=122199
 
-#pass=4-1162, test_acc=0.986962, time=34761.5, testPredTime=644.754, p-obj=115673
+#pass=4-1162, test_acc=0.986962, time=33613, testPredTime=491.054, p-obj=116135
 
-#pass=4-1901, test_acc=0.986962, time=36036, testPredTime=824.582, p-obj=109175
+#pass=4-1901, test_acc=0.986851, time=34782.9, testPredTime=321.598, p-obj=111689
 
-#pass=4-2640, test_acc=0.986851, time=36982.8, testPredTime=589.741, p-obj=107135
+#pass=4-2640, test_acc=0.986843, time=36119, testPredTime=391.264, p-obj=108273

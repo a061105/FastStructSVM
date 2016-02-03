@@ -1,12 +1,16 @@
 #train_samples=20835
-#test_samples=1000
-d=10726412
-K=226
+#test_samples=100
+d=10678950
+K=225
 lambda=4.79962e-05
 running SSG on 20835 examples...
 
-#pass=0-1000, test_acc=0.99627, time=16226.7, testPredTime=7065.77, p-obj=2.29971e+07
+#pass=0-100, test_acc=0.985156, time=2655.07, testPredTime=1322.8, p-obj=2.15852e+09
 
-#pass=0-2000, test_acc=0.99685, time=33064.4, testPredTime=8227.33, p-obj=5.89573e+06
+#pass=0-200, test_acc=0.992089, time=4978.29, testPredTime=1484.9, p-obj=5.47451e+08
 
-#pass=0-3000, test_acc=0.997199, time=52938.7, testPredTime=7555.71, p-obj=2.68065e+06
+#pass=0-300, test_acc=0.992978, time=8881.06, testPredTime=1922.39, p-obj=2.45289e+08
+
+#pass=0-400, test_acc=0.9944, time=12348.4, testPredTime=1939.16, p-obj=1.40591e+08
+
+#pass=0-500, test_acc=0.995333, time=16345.4, testPredTime=1933.38, p-obj=8.89153e+07

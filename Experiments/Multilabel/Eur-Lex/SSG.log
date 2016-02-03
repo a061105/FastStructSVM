@@ -1,6 +1,6 @@
-#train_samples=15643
-#test_samples=1933
-d=34649920
-K=3895
-lambda=6.39264e-05
-running SSG on 15643 examples...
+#train_samples=15666
+#test_samples=100
+d=2189430
+K=405
+lambda=6.38325e-05
+running SSG on 15666 examples...

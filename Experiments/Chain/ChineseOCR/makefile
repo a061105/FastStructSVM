@@ -3,7 +3,7 @@ data_dir=/scratch/cluster/ianyen/data
 train_file=$(data_dir)/ChineseOCR/data.fea.train
 test_file=$(data_dir)/ChineseOCR/data.fea.test
 
-Solvers=SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO
+Solvers=SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO GDMM-subFMO-acc
 
 ##all:
 ##	for i in $(Solvers); do \
@@ -25,10 +25,13 @@ Soft-BCFW-accurate.log: $(train_file) $(test_file)
 	((./$(dir_struct)/ChainStruct/train -s 1 -b -u -q 1 -a 0 -t 10 -m 10000 -e 100 -o 1 -h $(test_file) $(train_file) model.Soft-BCFW-accurate) 2>&1 ) >> Soft-BCFW-accurate.log
 
 GDMM.log: $(train_file) $(test_file)
-	((./$(dir_struct)/ChainStruct/train -s 1 -b -q 1 -a 1 -t 0.1 -m 10000 -e 100 -o 1 -h $(test_file) $(train_file) model.GDMM) 2>&1 ) >> GDMM.log
+	((./$(dir_struct)/ChainStruct/train -s 1 -b -q 1 -a 1 -t 10 -m 10000 -e 100 -o 1 -h $(test_file) $(train_file) model.GDMM) 2>&1 ) >> GDMM.log
 
 GDMM-subFMO.log: $(train_file) $(test_file) 
-	((./$(dir_struct)/ChainStruct/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 10 -h $(test_file) $(train_file) model.GDMM-subFMO) 2>&1 ) >> GDMM-subFMO.log
+	((./$(dir_struct)/ChainStruct/train -s 1 -q 3 -a 1 -t 1 -m 10000 -e 100 -o 10 -h $(test_file) $(train_file) model.GDMM-subFMO) 2>&1 ) >> GDMM-subFMO.log
+
+GDMM-subFMO-acc.log: $(train_file) $(test_file) 
+	((./$(dir_struct)/ChainStruct/train -s 1 -q 3 -a 1 -t 10 -m 10000 -e 100 -o 10 -h $(test_file) $(train_file) model.GDMM-subFMO-acc) 2>&1 ) >> GDMM-subFMO-acc.log
 
 .PHONY: time_obj time_acc
 
