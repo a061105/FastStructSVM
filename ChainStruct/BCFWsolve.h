@@ -532,10 +532,7 @@ class BCFWsolve{
 			cerr << ", dual_obj=" << dual_obj();
 			if ((iter+1) % heldout_period == 0){
 				overall_time += get_current_time();
-				Int subsample = nSeq;
-				if (nSeq > 1000){
-					subsample = nSeq/10;
-				}
+				Int subsample = heldout_prob->data.size();
 				cerr << ", p_obj=" << primal_obj(par, nSeq, subsample, model);
 				overall_time -= get_current_time();
 			}
