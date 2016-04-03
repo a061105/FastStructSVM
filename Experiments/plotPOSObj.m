@@ -1,7 +1,7 @@
 function plotPOSObj(varargin)
-color_arr = {'g' 'c' 'k' 'k' 'b' 'r' 'm' 'y' 'b'};
+color_arr = {'r' 'k' 'm' 'k' 'm' 'r' 'm' 'y' 'b'};
 %color_arr = { 'r'  'k' 'r' 'r' 'k'  'k'  'c'   'b'};
-dot_arr = { 'o' 'd'  '*'  's'  'x' 'x' 's'    '^'};
+dot_arr = { 'd' 's'  's'  's'  's' 'x' 's'    '^'};
 %dot_arr = {'' '' '' '' '' '' '' ''    ''};
 line_arr = {'-' '-' '-' '-' '-' '-' '-' '-'    '-'};
 %dot_arr = ['o' '*' '.' 'x' '+' 'V' '<' '>' '^'];
@@ -73,24 +73,43 @@ for i = 2:nargin  %([3 4 2 1]+1)
 	
 	data = fscanf(fp,'%g',[2 inf]);  
 	
-	if (size(data, 2) < 2)
+	if (size(data, 2) < 1)
 		continue;
 	end
 	
-	xx = [];
-	yy = [];
+	xx = [data(1, 1)];
+	yy = [data(2, 1)];
+	rho = 0.9; last = data(2, 1);
 	for j = 2:size(data, 2)
-		if data(2, j) >= data(2, j-1)
-			data(2, j) = data(2, j-1);
-			if (j == size(data, 2))
-				xx = [xx data(1, j)]
-				yy = [yy data(2, j)]
+		data(2, j) = data(2, j) * rho + last * (1-rho);
+		last = data(2, j);
+	end
+	stepsize=1;
+	cur_min=data(2, 1); last_x = data(1,1);
+	for j = (1+stepsize):stepsize:size(data, 2)
+		if data(1, j) > xupper
+			continue;
+		end
+		if data(2, j) >= cur_min
+			if (j + stepsize > size(data, 2) || data(1, j + stepsize) > xupper)
+				xx = [xx data(1, j)];
+				yy = [yy cur_min];
 			end
 		else
-			xx = [xx data(1, j)]
-			yy = [yy data(2, j)]
+			cur_min = data(2, j);
+			if (data(1, j) > last_x * 1.00)
+				last_x = data(1, j);
+				xx = [xx data(1, j)];
+				yy = [yy data(2, j)];
+			end
 		end
 	end
+	
+	%for j = 2:size(yy, 2)
+	%	if (yy(j) > yy(j-1))
+	%		yy(j) = yy(j-1);
+	%	end
+	%end
 
 	%legend('-DynamicLegend','Location','SouthEast');
 
@@ -100,10 +119,18 @@ for i = 2:nargin  %([3 4 2 1]+1)
 	%semilogx(data(1,:),data(2,:),[line_arr{i-1} dot_arr{i-1} color_arr{i-1}],'DisplayName',fname{end});
 	%semilogy(xx,yy,[line_arr{i-1} dot_arr{i-1} color_arr{i-1}], 'DisplayName', fname{end});
 	%plot(data(1,:),data(2,:),[line_arr{i-1} dot_arr{i-1} color_arr{i-1}], 'DisplayName', fname{end});
-	loglog(xx,yy,[line_arr{i-1} dot_arr{i-1} color_arr{i-1}], 'DisplayName', fname{end});
+	name = fname{end};
+	if strcmp(name,'Soft-BCFW')
+		name = 'Soft-BCFW-$\rho$=1';
+	end
+	if strcmp(name,'Soft-BCFW-accurate')
+		name = 'Soft-BCFW-$\rho$=10';
+	end
+	loglog(xx,yy,[line_arr{i-1} dot_arr{i-1} color_arr{i-1}], 'DisplayName', name);
 	
-	legend('-DynamicLegend','Location','NorthEast');
+	h=legend('-DynamicLegend','Location','NorthEast');
 	set(gca,'FontSize',14);
+	set(h, 'Interpreter', 'latex');
 	hold on;
 end
 
@@ -130,9 +157,7 @@ line = fgets(fp);
 labels = split(' ',line);
 xlabel(labels{1});
 ylabel(labels{2});
-title(titlename);
-xupper = 3000;
-yupper = 1;
+title('POS');
 %axis([-inf.8,110,0,28]);
 %axis([-inf,8000,0.1,0.4]);
 axis([xlower,xupper,ylower,yupper]);
@@ -141,6 +166,6 @@ axis([xlower,xupper,ylower,yupper]);
 %grid on;
 
 
-%saveas(gcf,[all_names '.eps'],'epsc');
-saveas(gcf,[all_names '.pdf'],'pdf');
+saveas(gcf,[all_names '.eps'],'epsc');
+%saveas(gcf,[all_names '.pdf'],'pdf');
 exit(0);

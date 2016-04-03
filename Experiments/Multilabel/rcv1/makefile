@@ -30,13 +30,16 @@ GDMM.log: $(train_file) $(test_file)
 GDMM-subFMO.log: $(train_file) $(test_file)
 	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 10 -h $(test_file) $(train_file) model.GDMM-subFMO) 2>&1 ) >> GDMM-subFMO.log
 
+GDMM-subFMO-longer.log: $(train_file) $(test_file)
+	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 200 -h $(test_file) $(train_file) model.GDMM-subFMO-longer) 2>&1 ) >> GDMM-subFMO-longer.log
+
 GDMM-subFMO-subtest.log: $(train_file) $(data_dir)/rcv1_regions.subtest.10	
 	((./$(dir_struct)/Multilabel/train -s 1 -q 3 -a 1 -t 0.1 -m 10000 -e 100 -o 10 -h $(data_dir)/rcv1_regions.subtest.10 $(train_file) model.GDMM-subFMO-subtest) 2>&1 ) >> GDMM-subFMO-subtest.log
 
 .PHONY: time_obj time_acc
 
 time_obj:
-	for i in $(Solvers); do \
+	for i in SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM-subFMO; do \
 		make time_obj/$$i ; \
 	done
 
@@ -53,7 +56,7 @@ time_obj/%:
 	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }'  | sed 's/[.]*$$//' >> time_obj/$*
 
 time_acc:
-	for i in $(Solvers); do \
+	for i in SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM-subFMO; do \
 		make time_acc/$$i ; \
 	done
 

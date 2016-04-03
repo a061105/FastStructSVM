@@ -1,7 +1,8 @@
-using heldout data set: /scratch/cluster/ianyen/data/multilabel/Eur-Lex-Small.subtest.100
+using heldout data set: /scratch/cluster/ianyen/data/multilabel/Eur-Lex-Small.test
 D=5001
-K=405
+K=407
 N=15666
 d=237.683
 r=1
-i=0, a_nnz=2.16079, ever_a_nnz=2.16079, b_nnz=2.20905, uni_search=5.14377, uni_subSolve=0.270847, uni_maintain_time=0.130289, bi_search=128.88, bi_subSolve=0.0772209, bi_maintain_time=0.0738212, admm_maintain=0.0226811, area4=-nan, infea=0.20289, d_obj=36.1078
+i=0, a_nnz=2.15901, ever_a_nnz=2.15901, b_nnz=2.19973, uni_search=4.35451, uni_subSolve=0.215163, uni_maintain_time=0.105609, bi_search=126.735, bi_subSolve=0.0752149, bi_maintain_time=0.0641464, admm_maintain=0.0358523, area4=-nan, infea=0.0347961, d_obj=157.291, p_obj=701972..................., heldout Acc=0.97296, overall time=131.796
+i=1, a_nnz=2.63788, ever_a_nnz=2.93993, b_nnz=4.30582, uni_search=12.0731, uni_subSolve=0.37264, uni_maintain_time=0.121502, bi_search=117.805, bi_subSolve=0.316175, bi_maintain_time=0.137402, admm_maintain=0.0547362, area4=-nan, infea=0.248308, d_obj=2451.72

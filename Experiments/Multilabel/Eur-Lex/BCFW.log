@@ -1,6 +1,0 @@
-#train_samples=15666
-#test_samples=100
-d=2189430
-K=405
-lambda=6.38325e-05
-running BCFW on 15666 examples...

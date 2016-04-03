@@ -36,7 +36,7 @@ GDMM-subFMO-acc.log: $(train_file) $(test_file)
 .PHONY: time_obj time_acc
 
 time_obj:
-	for i in $(Solvers); do \
+	for i in SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM-subFMO-acc; do \
 		make time_obj/$$i ; \
 	done
 
@@ -53,7 +53,7 @@ time_obj/%:
 	cat $*.log | grep 'p_obj' | sed 's/^.*p_obj=//' | sed 's/,.*overall time=/ /' | awk '{ print $$2 " " $$1; }' >> time_obj/$*
 
 time_acc:
-	for i in $(Solvers); do \
+	for i in SSG BCFW Soft-BCFW Soft-BCFW-accurate GDMM-subFMO-acc; do \
 		make time_acc/$$i ; \
 	done
 
@@ -68,3 +68,45 @@ time_acc/BCFW:
 time_acc/%:
 	echo "time accuracy" >> time_acc/$*
 	cat $*.log | grep 'heldout Acc' | sed 's/^.*heldout Acc=//' | sed 's/,.*overall time=/ /' | sed 's/ (.*)//' | awk '{ print $$2 " " $$1; }' >> time_acc/$*
+
+iter_obj:
+	for i in Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO; do \
+                make iter_obj/$$i ; \
+        done
+
+iter_obj/GDMM:
+	echo "iteration objective" >> $@
+	cat $(@F).log | grep 'p_obj' | sed 's/^i=//' | sed 's/,.*p_obj=/ /' | sed 's/,.*$$//' >> iter_obj/$(@F)
+
+iter_obj/GDMM-subFMO:
+	echo "iteration objective" >> $@
+	cat $(@F).log | grep 'p_obj' | sed 's/^i=//' | sed 's/,.*p_obj=/ /' | sed 's/,.*$$//' >> iter_obj/$(@F)
+	
+iter_obj/Soft-BCFW:
+	echo "iteration objective" >> $@
+	cat $(@F).log | grep 'p_obj' | sed 's/^i=//' | sed 's/,.*p_obj=/ /' | sed 's/,.*$$//' >> iter_obj/$(@F)
+
+iter_obj/Soft-BCFW-accurate:
+	echo "iteration objective" >> $@
+	cat $(@F).log | grep 'p_obj' | sed 's/^i=//' | sed 's/,.*p_obj=/ /' | sed 's/,.*$$//' >> iter_obj/$(@F)	
+
+iter_acc:
+	for i in Soft-BCFW Soft-BCFW-accurate GDMM GDMM-subFMO; do \
+                make iter_acc/$$i ; \
+        done
+
+iter_acc/GDMM:
+	echo "iteration accuracy" >> $@
+	cat $(@F).log | grep 'heldout Acc=' | sed 's/^i=//' | sed 's/,.*heldout Acc=/ /' | sed 's/ (.*)//' |  sed 's/,.*$$//' >> $@
+
+iter_acc/GDMM-subFMO:
+	echo "iteration accuracy" >> $@
+	cat $(@F).log | grep 'heldout Acc=' | sed 's/^i=//' | sed 's/,.*heldout Acc=/ /' | sed 's/ (.*)//' |  sed 's/,.*$$//' >> $@
+	
+iter_acc/Soft-BCFW:
+	echo "iteration accuracy" >> $@
+	cat $(@F).log | grep 'heldout Acc=' | sed 's/^i=//' | sed 's/,.*heldout Acc=/ /' | sed 's/ (.*)//' |  sed 's/,.*$$//' >> $@
+
+iter_acc/Soft-BCFW-accurate:
+	echo "iteration accuracy" >> $@
+	cat $(@F).log | grep 'heldout Acc=' | sed 's/^i=//' | sed 's/,.*heldout Acc=/ /' | sed 's/ (.*)//' |  sed 's/,.*$$//' >> $@

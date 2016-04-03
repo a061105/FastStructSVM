@@ -1,0 +1,54 @@
+#train_samples=20835
+#test_samples=100
+d=10678950
+K=225
+lambda=4.79962e-05
+running SSG on 20835 examples...
+
+#pass=0-100, test_acc=0.985156, time=2655.07, testPredTime=1322.8, p-obj=2.15852e+09
+
+#pass=0-200, test_acc=0.992089, time=4978.29, testPredTime=1484.9, p-obj=5.47451e+08
+
+#pass=0-300, test_acc=0.992978, time=8881.06, testPredTime=1922.39, p-obj=2.45289e+08
+
+#pass=0-400, test_acc=0.9944, time=12348.4, testPredTime=1939.16, p-obj=1.40591e+08
+
+#pass=0-500, test_acc=0.995333, time=16345.4, testPredTime=1933.38, p-obj=8.89153e+07
+
+#pass=0-600, test_acc=0.994356, time=19865.7, testPredTime=1885.16, p-obj=6.213e+07
+
+#pass=0-700, test_acc=0.995289, time=23358.8, testPredTime=1770.95, p-obj=4.5809e+07
+
+#pass=0-800, test_acc=0.995733, time=26626.1, testPredTime=1668.96, p-obj=3.59635e+07
+
+#pass=0-900, test_acc=0.996133, time=29693.4, testPredTime=1571.07, p-obj=2.79431e+07
+
+#pass=0-1000, test_acc=0.995778, time=33391.9, testPredTime=1629.21, p-obj=2.2786e+07
+
+#pass=0-1100, test_acc=0.995778, time=37275.7, testPredTime=1781.88, p-obj=1.88117e+07
+
+#pass=0-1200, test_acc=0.995956, time=41730.5, testPredTime=1751.08, p-obj=1.59007e+07
+
+#pass=0-1300, test_acc=0.996044, time=45787.2, testPredTime=1862.87, p-obj=1.35681e+07
+
+#pass=0-1400, test_acc=0.996, time=50119.8, testPredTime=1834.34, p-obj=1.16955e+07
+
+#pass=0-1500, test_acc=0.9964, time=54106.2, testPredTime=1633.85, p-obj=1.03121e+07
+
+#pass=0-1600, test_acc=0.996756, time=57914.9, testPredTime=1580.35, p-obj=9.11505e+06
+
+#pass=0-1700, test_acc=0.996667, time=61355.2, testPredTime=1436.47, p-obj=8.10512e+06
+
+#pass=0-1800, test_acc=0.996667, time=65056.4, testPredTime=1404.36, p-obj=7.24698e+06
+
+#pass=0-1900, test_acc=0.996978, time=69205, testPredTime=1676.1, p-obj=6.46267e+06
+
+#pass=0-2000, test_acc=0.996622, time=72274.5, testPredTime=1864.6, p-obj=5.91422e+06
+
+#pass=0-2100, test_acc=0.996711, time=75558.1, testPredTime=1240.97, p-obj=5.41155e+06
+
+#pass=0-2200, test_acc=0.997111, time=77638.6, testPredTime=921.672, p-obj=4.9045e+06
+
+#pass=0-2300, test_acc=0.996622, time=79729.8, testPredTime=1138.54, p-obj=4.46659e+06
+
+#pass=0-2400, test_acc=0.996933, time=82463.1, testPredTime=1316.26, p-obj=4.14663e+06
