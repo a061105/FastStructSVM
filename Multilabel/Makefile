@@ -1,5 +1,5 @@
-CXX ?= g++
-CC ?= gcc
+CXX=g++-4.8
+CC=gcc-4.8
 CFLAGS = -w -fopenmp -O3 -std=c++11
 LIBS = blas/blas.a
 
@@ -17,14 +17,14 @@ clean:
 		rm -f *~ *.o train
 
 scale=train
-data_dir=/scratch/cluster/ianyen/data/multilabel/
+data_dir=.#/scratch/cluster/ianyen/data/multilabel/
 s=1
 a=1
-m=10000
-e=10
-t=100
-o=10
-q=1
+m=500
+e=3
+t=0.1
+o=500
+q=3
 opt=
 r=-1
 c=1.0
@@ -35,12 +35,12 @@ bibtex:
 yeast:
 	$(eval train_file := $(data_dir)/yeast_$(scale).svm)
 	$(eval test_file := $(data_dir)/yeast_test.svm)
-	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
+	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file) "yeast.model"
 
 rcv1_regions:
 	$(eval train_file := $(data_dir)/rcv1_regions.train)
 	$(eval test_file := $(data_dir)/rcv1_regions_test.03k)
-	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file)
+	./train -c $(c) -r $(r) -q $(q) $(opt) -o $(o) -t $(t) -s $(s) -a $(a) -m $(m) -e $(e) -h $(test_file) $(train_file) "rcv1.model"
 
 Eur-Lex:
 	$(eval train_file := $(data_dir)/Eur-Lex.$(scale))

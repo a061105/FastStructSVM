@@ -427,15 +427,15 @@ class BDMMsolve{
 			
 			Int Ns = N/10;
 
-			Int hit=0;
-			Int* pred = new Int[K];
+			Float hit=0;
+			Float* pred = new Float[K];
 			for(Int n=0;n<Ns;n++){
 				Instance* ins = data->at(n);
 				model->LPpredict(ins, pred);
 				for(Int k=0;k<K;k++){
-					int yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
-					if( pred[k] == yk )
-						hit++;
+					Float yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
+					//if( pred[k] == yk )
+					hit+= 1 - fabs(pred[k] - yk);
 				}
 				
 				if( n%10 ==0 )

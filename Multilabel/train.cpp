@@ -94,6 +94,54 @@ void parse_cmd_line(int argc, char** argv, Param* param){
 	}
 }
 
+void writeModel( char* fname, Model* model ){
+
+    ofstream fout(fname);
+    int K = model->K, D = model->D;
+    Float** w = model->w;
+    Float** v = model->v;
+    vector<string>* label_name_list = model->label_name_list;
+    fout << "nr_class K=" << K << endl;
+    fout << "label ";
+    for(vector<string>::iterator it=label_name_list->begin();
+            it!=label_name_list->end(); it++)
+        fout << *it << " ";
+    fout << endl;
+    fout << "nr_feature D=" << D << endl;
+    fout << "unigram w, format: D lines; line j contains (k, w) forall w[j][k] neq 0" << endl;
+    for (int j = 0; j < D; j++){
+        Float* wj = w[j];
+        bool flag = false;
+        for (int k = 0; k < K; k++){
+            if (fabs(wj[k]) < 1e-12)
+                continue;
+            if (flag)
+                fout << " ";
+            else
+                flag = true;
+            fout << k << ":" << wj[k];
+        }
+        fout << endl;
+    }
+
+    fout << "bigram v, format: K lines; line k1 contains (k2, v) forall v[k1][k2] neq 0" << endl;
+    for (int k1 = 0; k1 < K; k1++){
+        Float* v_k1 = v[k1];
+        bool flag = false;
+        for (int k2 = 0; k2 < K; k2++){
+            if (fabs(v_k1[k2]) < 1e-12)
+                continue;
+            if (flag)
+                fout << " ";
+            else 
+                flag = true;
+            fout << k2 << ":" << v_k1[k2];
+        }
+        fout << endl;
+    }
+    fout.close();
+}
+
 int main(int argc, char** argv){
 
 	Param* param = new Param();
@@ -131,6 +179,7 @@ int main(int argc, char** argv){
 	} else {
 		BCFWsolve* solver = new BCFWsolve(param);
 		Model* model = solver->solve();
+        writeModel(param->modelFname, model);
 	}
 
 	overall_time += omp_get_wtime();

@@ -40,7 +40,7 @@ class LP_Param{
 		tol_trans = -1;
 		tol_sub = 0.5*tol_trans;
 		
-		eta = 1.0;
+		eta = 1;
 		nnz_tol = 1e-4;
 		max_iter = 1000;
 	}
@@ -300,7 +300,8 @@ void solve_linear_system(int n, int m, int me, double eta, ConstrInv* At_sub, do
  */
 
 void projected_newton(int n, int nf, int m, int me, Constr* A, ConstrInv* At, double* b, double* c, double*& x, double* w, double eta_t, int& niter, int inner_max_iter){
-	
+
+    assert(false);
 	double sigma = 0.01;  //line search parameter
 	double beta = 0.5;
 	double cg_prec = 0.1;
@@ -535,7 +536,7 @@ void LPsolve(int n, int nf, int m, int me, Constr* A, ConstrInv* At, double* b, 
 	int inner_max_iter=1;
 	double PGmax_old = 1e300;
 	int niter;
-	int print_per_iter = 2;
+	int print_per_iter = 1;
 	double pinf = 1e300, gap=1e300, dinf=1300, obj; //primal infeasibility
 	int nnz;//, nnz_last=1;
 	int active_nnz = nnz_A;
@@ -573,13 +574,14 @@ void LPsolve(int n, int nf, int m, int me, Constr* A, ConstrInv* At, double* b, 
 			gap = duality_gap(n,nf,m,me,x,w,c,b,eta_t);
 
 			
-			//cerr << setprecision(7) << "iter=" << t << ", #inner=" << niter << ", obj=" << obj ;
+			//cerr << setprecision(7) << "iter=" << t << ", #inner=" << niter << ", obj=" << obj << ", eta=" << eta_t;
 			//cerr << setprecision(2)  << ", p_inf=" << pinf << ", d_inf=" << dinf << ", gap=" << fabs(gap/obj) << ", nnz=" << nnz << "(" << ((double)active_nnz/nnz_A) << ")" ;
 			//cerr << endl;
 		}
 		
-		if( pinf<=param.tol && dinf<=param.tol ){
-			break;
+		if( obj <= 0.0 && pinf<=param.tol && dinf<=param.tol ){
+	        //cerr << "t=" << t << endl;
+            break;
 		}
 		
 		// w_t = Ax-b + w_{t-1} = w_t-1 + alpha_{t}/eta_t - alpha_{t-1}/eta_t  

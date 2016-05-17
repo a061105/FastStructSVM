@@ -143,8 +143,9 @@ class Model{
 	vector<string>* label_name_list;
 	map<string,Int>* label_index_map;
 	
-	
-	void LPpredict( Instance* ins, Int* pred ){
+
+    static Float score;
+	void LPpredict( Instance* ins, Float* pred ){
 		
 		if( ins_pred_prob == NULL )
 			construct_LP();
@@ -175,16 +176,21 @@ class Model{
 		
 		//Rounding
 		double* x = ins_pred_prob->x;
-		for(int i=0;i<K;i++){
-			if( x[i] < 1e-2 ){
+        for(int i=0;i<K;i++){
+			/*if( x[i] < 1e-2 ){
 				pred[i] = 0;
 				continue;
-			}
-			if( ((double)rand()/RAND_MAX) < x[i] )
+			}*/
+            /*if( ((double)rand()/RAND_MAX) < x[i] )
 				pred[i] = 1;
 			else
 				pred[i] = 0;
+                */
+			pred[i] = x[i];
 		}
+        for (int i = 0; i < K + M * 4; i++)
+            score += x[i]*c[i];
+        cerr << ", score=" << score;
 	}
 
 	void construct_LP(){
@@ -454,7 +460,8 @@ double dot(SparseVec* sv, Float** w, Float** v, Int D, Int K){
 }
 
 double primal_obj( Param* param, Int total, Int subsample,  Model* model){
-	
+
+    return 0.0;
 	vector<Instance*>* data = &(param->prob->data);
 
 	FracLabel* ystar = new FracLabel();
@@ -546,5 +553,7 @@ double primal_obj( Param* param, Int total, Int subsample,  Model* model){
 	
 	return reg_term + loss_term;
 }
+
+Float Model::score = 0.0;
 
 #endif 

@@ -96,7 +96,25 @@ class BCFWsolve{
 
 			//model that traces w, v
 			model = new Model(w, v, prob);
-			
+		    best_model = NULL;
+            if (heldout_prob != NULL){
+                
+                Float** best_w = new Float*[D];
+                for(Int j=0;j<D;j++){
+                    best_w[j] = new Float[K];
+                    for(Int k=0;k<K;k++)
+                        best_w[j][k] = 0.0;
+                }
+                Float** best_v = new Float*[K];
+                for(Int k=0;k<K;k++){
+                    best_v[k] = new Float[K];
+                    for(Int k2=0;k2<K;k2++)
+                        best_v[k][k2] = 0.0;
+                }
+
+                best_model = new Model(best_w, best_v, prob);
+            }
+
 			// pre-process positive labels
 			is_pos_label = new bool*[N]; 
 			for (Int i = 0; i < N; i++){
@@ -455,8 +473,9 @@ class BCFWsolve{
 								p_inf += delta_mu_r * delta_mu_r;
 								mu_nij[F_LEFT] += admm_step_size*(delta_mu_l);
 								mu_nij[F_RIGHT] += admm_step_size*(delta_mu_r);
-							} else {	
-								Float beta_nij01, beta_nij10;
+							} else {
+								assert(false);
+                                Float beta_nij01, beta_nij10;
 								recover_beta(n, i, j, alpha_n, mu_n, beta_nij10, beta_nij01);
 								Float delta_mu_l = beta_nij10 - alpha_n[i];
 								Float delta_mu_r = beta_nij01 - alpha_n[j];
@@ -549,6 +568,17 @@ class BCFWsolve{
 						if (heldout_test_acc > max_heldout_test_acc){
 							max_heldout_test_acc = heldout_test_acc;
 							terminate_counting = 0;
+                            
+                            Float** best_w = best_model->w;
+                            for(Int j=0;j<D;j++){
+                                for(Int k=0;k<K;k++)
+                                    best_w[j][k] = w[j][k];
+                            }
+                            Float** best_v = best_model->v;
+                            for(Int k=0;k<K;k++){
+                                for(Int k2=0;k2<K;k2++)
+                                    best_v[k][k2] = v[k][k2];
+                            }
 						} else {
 							cerr << " (" << (++terminate_counting) << "/" << (early_terminate) << ")";
 							if (terminate_counting == early_terminate){
@@ -571,7 +601,10 @@ class BCFWsolve{
 				for(Int j=i+1;j<K;j++)
 					delete[] beta_new[i*K+j];
 			delete[] beta_new;
-			return new Model(w,v,prob);
+            if (best_model != NULL)
+                return best_model;
+            else
+			    return new Model(w,v,prob);
 		}
 
 	private:
@@ -1427,16 +1460,16 @@ class BCFWsolve{
 			
 			Int Ns = N/50;
 
-			Int hit=0;
-			Int* pred = new Int[K];
+			Float hit=0;
+			Float* pred = new Float[K];
 			
 			for(Int n=0;n<Ns;n++){
 				Instance* ins = data->at(n);
 				model->LPpredict(ins, pred);
 				for(Int k=0;k<K;k++){
-					int yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
-					if( pred[k] == yk )
-						hit++;
+					Float yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
+					//if( pred[k] == yk )
+					hit+= 1 - fabs(pred[k] - yk);
 				}
 				
 				if( n%10 ==0 )
@@ -1451,21 +1484,30 @@ class BCFWsolve{
 		Float heldout_acc_joint(){
 			
 			vector<Instance*>* heldout_data = &(heldout_prob->data);
-			Int Ns = heldout_data->size() / 10;
-			Int hit=0;
+			Int Ns = heldout_data->size();
+			Float hit=0;
 			Int n = 0;
-			Int* pred = new Int[K];
+			Float* pred = new Float[K];
 
 			for (vector<Instance*>::iterator it_heldout = heldout_data->begin(); it_heldout != heldout_data->end(); it_heldout++){
 				if ((n++) >= Ns)
 					break;
-				Instance* ins = *it_heldout;	
+                Instance* ins = *it_heldout;	
 				model->LPpredict(ins, pred);
+                Float temp_hit = hit;
 				for(Int k=0;k<K;k++){
-					int yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
-					if( pred[k] == yk )
-						hit++;
+					Float yk = (find(ins->labels.begin(), ins->labels.end(), k) != ins->labels.end())? 1:0;
+					//if( pred[k] == yk )
+					hit+= 1 - fabs(pred[k] - yk);
 				}
+                
+                cerr << endl;
+                for (int k = 0; k < K; k++){
+                    cerr << "," << pred[k];
+                }
+                cerr << " ------ ";
+                cerr << "case acc=" << ((Float)hit-temp_hit)/K << endl;
+                
 				if( n % 10 == 0 )
 					cerr << "." ;
 			}
@@ -1680,4 +1722,5 @@ class BCFWsolve{
 		Float admm_step_size;
 		
 		Model* model;
+		Model* best_model;
 };
